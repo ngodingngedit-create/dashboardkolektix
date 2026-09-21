@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, createContext } from "react";
+import React, { useState, useMemo, useCallback, useEffect, createContext, useRef } from "react";
 import EventCardCreator from "@/components/Card/EventCard/creator";
 import config from "@/Config";
 import { useRouter } from "next/router";
@@ -548,46 +548,110 @@ const MyEventDetail = () => {
   };
 
   const [ticketSoldMap, setTicketSoldMap] = useState<Record<number, number>>({});
+  const [ticketSoldLoading, setTicketSoldLoading] = useState(false);
+  const [ticketSoldLoaded, setTicketSoldLoaded] = useState(false);
+  const ticketSoldRequestId = useRef(0);
 
   const fetchTicketSoldCounts = useCallback(async (eventId: string | number) => {
-    try {
-      const buildUrl = (type: string) => {
-        const params = new URLSearchParams({
-          event_id: eventId.toString(),
-          page: "1",
-          per_page: "999999",
-          type_transaction: type,
-        });
-        return `list-transaction-by-event?${params.toString()}`;
-      };
+    const requestId = ++ticketSoldRequestId.current;
+    setTicketSoldLoading(true);
 
-      const [onlineRes, offlineRes] = await Promise.all([
-        axios.get(`${config.wsUrl}${buildUrl("online")}`, {
-          headers: { "Content-Type": "application/json" },
-        }),
-        axios.get(`${config.wsUrl}${buildUrl("offline")}`, {
-          headers: { "Content-Type": "application/json" },
-        }),
+    const PER_PAGE = 1000;
+
+    const fetchPage = async (type: string, page: number) => {
+      const params = new URLSearchParams({
+        event_id: eventId.toString(),
+        page: page.toString(),
+        per_page: PER_PAGE.toString(),
+        type_transaction: type,
+      });
+      const res = await axios.get(`${config.wsUrl}list-transaction-by-event?${params.toString()}`, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return ((res.data as TransactionResponse)?.data ?? []) as any[];
+    };
+
+    const isNotFound = (err: any) => err?.response?.status === 404;
+
+    // Retry 1x saat gagal non-404, tanpa tombol manual.
+    // 404 ("Data not found") dilempar ulang agar dikenali sebagai akhir pagination.
+    const fetchPageWithRetry = async (type: string, page: number) => {
+      try {
+        return await fetchPage(type, page);
+      } catch (err) {
+        if (isNotFound(err)) throw err;
+        return await fetchPage(type, page);
+      }
+    };
+
+    // Paginasi: ambil 1000 per halaman, stop saat halaman kosong atau 404.
+    // 404 di halaman berapa pun = akhir data, kembalikan yang sudah terkumpul.
+    const fetchAllByType = async (type: string) => {
+      const collected: any[] = [];
+      let page = 1;
+      // Safety guard agar tidak infinite loop
+      const MAX_PAGES = 100;
+      while (page <= MAX_PAGES) {
+        let rows: any[];
+        try {
+          rows = await fetchPageWithRetry(type, page);
+        } catch (err) {
+          if (isNotFound(err)) break;
+          throw err;
+        }
+        if (!rows || rows.length === 0) break;
+        collected.push(...rows);
+        page += 1;
+      }
+      return collected;
+    };
+
+    try {
+      const [onlineResult, offlineResult] = await Promise.allSettled([
+        fetchAllByType("online"),
+        fetchAllByType("offline"),
       ]);
 
-      const onlineTxns = (onlineRes.data as TransactionResponse)?.data ?? [];
-      const offlineTxns = (offlineRes.data as TransactionResponse)?.data ?? [];
-      const allTransactions = [...onlineTxns, ...offlineTxns];
+      const successfulTxns: any[] = [];
+      if (onlineResult.status === "fulfilled") {
+        successfulTxns.push(...onlineResult.value);
+      } else {
+        console.error("Error fetching online ticket sold counts (after 1 retry):", onlineResult.reason);
+      }
+      if (offlineResult.status === "fulfilled") {
+        successfulTxns.push(...offlineResult.value);
+      } else {
+        console.error("Error fetching offline ticket sold counts (after 1 retry):", offlineResult.reason);
+      }
+
+      // Kalau keduanya gagal, pertahankan map lama agar tidak flicker ke 0
+      if (requestId !== ticketSoldRequestId.current) return;
+      if (onlineResult.status === "rejected" && offlineResult.status === "rejected") {
+        return;
+      }
 
       const soldMap: Record<number, number> = {};
-      for (const txn of allTransactions) {
+      for (const txn of successfulTxns) {
         if (txn.transaction_status_id !== 2) continue;
         if (!txn.tickets?.length) continue;
         for (const t of txn.tickets) {
-          const ticketId = Number(t.has_event_ticket?.id ?? t.event_ticket_id);
+          const rawId = t.has_event_ticket?.id ?? t.event_ticket_id;
+          const ticketId = Number(rawId);
           if (ticketId) {
-            soldMap[ticketId] = (soldMap[ticketId] || 0) + (t.qty_ticket || 0);
+            soldMap[ticketId] = (soldMap[ticketId] || 0) + (Number(t.qty_ticket) || 0);
+          } else {
+            console.warn("Skip ticket sold count: ticket id tidak valid", rawId, t);
           }
         }
       }
       setTicketSoldMap(soldMap);
+      setTicketSoldLoaded(true);
     } catch (err) {
       console.error("Error fetching ticket sold counts:", err);
+    } finally {
+      if (requestId === ticketSoldRequestId.current) {
+        setTicketSoldLoading(false);
+      }
     }
   }, []);
 
@@ -721,6 +785,12 @@ const MyEventDetail = () => {
       fetchTicketSoldCounts(data.id);
     }
   }, [data?.id, user?.id, updateWithdrawHistory, fetchTicketSoldCounts]);
+
+  useEffect(() => {
+    if (activeTab === "Tiket" && data?.id && user?.id) {
+      fetchTicketSoldCounts(data.id);
+    }
+  }, [activeTab, data?.id, user?.id, fetchTicketSoldCounts]);
 
   const getStatusClass = (statusId: any) => {
     switch (statusId) {
@@ -1169,6 +1239,11 @@ const MyEventDetail = () => {
                 <Tab key="Tiket" title={t("event.tickets")}>
                   <div className="flex justify-between items-center px-3 py-2">
                     <h6 className="text-lg font-semibold">{t("event.tickets")}</h6>
+                    {ticketSoldLoading && (
+                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 animate-pulse">
+                        Menghitung...
+                      </span>
+                    )}
                   </div>
                   <div className="px-3 max-h-[400px] overflow-y-auto">
                     {ticket.length > 0 &&
@@ -1183,7 +1258,7 @@ const MyEventDetail = () => {
                             description={el.description}
                             name={el.name}
                             qty={el.qty}
-                            sold={ticketSoldMap[Number(el.id)] ?? el.ticket_sold ?? el.sold_qty ?? 0}
+                            sold={ticketSoldLoaded ? (ticketSoldMap[Number(el.id)] ?? 0) : (el.ticket_sold ?? el.sold_qty ?? 0)}
                             isAdmin={false}
                             onEdit={() => onEditTicket(el, index)}
                           />

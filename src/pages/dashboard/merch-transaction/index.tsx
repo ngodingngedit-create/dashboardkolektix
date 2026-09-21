@@ -524,7 +524,41 @@ const MerchandiseTransaction: React.FC = () => {
     }
   };
 
-  const getStatusInfo = (statusId?: number) => {
+  const getStatusInfo = (statusId?: number, statusName?: string) => {
+    // Utamakan status yang ada pada transaksinya (status_name / transaction_status.name)
+    if (statusName && statusName !== "-") {
+      const lower = statusName.toLowerCase();
+      if (lower.includes("paid") || lower.includes("success") || lower.includes("berhasil") || lower.includes("lunas")) {
+        return {
+          text: statusName.toUpperCase(),
+          color: "green",
+        };
+      }
+      if (lower.includes("pending") || lower.includes("menunggu") || lower.includes("unpaid")) {
+        return {
+          text: statusName.toUpperCase(),
+          color: "yellow",
+        };
+      }
+      if (lower.includes("expired") || lower.includes("kedaluwarsa")) {
+        return {
+          text: statusName.toUpperCase(),
+          color: "gray",
+        };
+      }
+      // Status lain dari transaksi tetap ditampilkan apa adanya
+      const foundByName = transactionStatuses.find(
+        (s) => s.name?.toLowerCase() === lower
+      );
+      if (foundByName) {
+        return {
+          text: foundByName.name,
+          color: foundByName.bgcolor || "blue",
+          isHex: !!foundByName.bgcolor?.startsWith('#')
+        };
+      }
+    }
+
     const foundStatus = transactionStatuses.find((s) => s.id === statusId);
     if (foundStatus) {
       return { 
@@ -534,6 +568,7 @@ const MerchandiseTransaction: React.FC = () => {
       };
     }
 
+    // Fallback sesuai transaction_status_id: 1 = pending, 2 = paid, 3 = expired
     switch (statusId) {
       case 1:
         return {
@@ -547,13 +582,13 @@ const MerchandiseTransaction: React.FC = () => {
         };
       case 3:
         return {
-          text: "FAILED",
-          color: "red",
+          text: "EXPIRED",
+          color: "gray",
         };
       case 4:
         return {
-          text: "EXPIRED",
-          color: "gray",
+          text: "FAILED",
+          color: "red",
         };
       case 5:
         return {
@@ -562,7 +597,7 @@ const MerchandiseTransaction: React.FC = () => {
         };
       default:
         return {
-          text: "UNKNOWN",
+          text: statusName && statusName !== "-" ? statusName.toUpperCase() : "UNKNOWN",
           color: "gray",
         };
     }
@@ -848,11 +883,12 @@ const MerchandiseTransaction: React.FC = () => {
   const getTransactionStatuses = async () => {
     try {
       const res: any = await Get("transaction-statuses", {});
+      // Sesuai transaction_status_id: 1 = pending, 2 = paid, 3 = expired
       const fallbackStatuses = [
         { id: 1, name: "Pending" },
         { id: 2, name: "Paid" },
-        { id: 3, name: "Failed" },
-        { id: 4, name: "Expired" },
+        { id: 3, name: "Expired" },
+        { id: 4, name: "Failed" },
         { id: 5, name: "Refund" },
       ];
       if (Array.isArray(res?.data) && res.data.length > 0) {
@@ -870,8 +906,8 @@ const MerchandiseTransaction: React.FC = () => {
       setTransactionStatuses([
         { id: 1, name: "Pending" },
         { id: 2, name: "Paid" },
-        { id: 3, name: "Failed" },
-        { id: 4, name: "Expired" },
+        { id: 3, name: "Expired" },
+        { id: 4, name: "Failed" },
         { id: 5, name: "Refund" },
       ]);
     }
@@ -1546,7 +1582,20 @@ const MerchandiseTransaction: React.FC = () => {
     let result = dataWithCreatorNames;
 
     if (paymentStatusFilter && paymentStatusFilter !== "all") {
-      result = result.filter(item => String(item.transaction_status_id) === paymentStatusFilter);
+      const selectedStatus = transactionStatuses.find((s) => String(s.id) === paymentStatusFilter);
+      const selectedName = (selectedStatus?.name || "").toLowerCase();
+      result = result.filter((item) => {
+        if (String(item.transaction_status_id) === paymentStatusFilter) return true;
+        // Menyesuaikan status yang ada pada transaksinya (status_name)
+        if (item.status_name && selectedName) {
+          const itemName = item.status_name.toLowerCase();
+          if (itemName === selectedName) return true;
+          if (selectedName.includes("paid") && (itemName.includes("paid") || itemName.includes("success") || itemName.includes("berhasil"))) return true;
+          if (selectedName.includes("pending") && itemName.includes("pending")) return true;
+          if (selectedName.includes("expired") && itemName.includes("expired")) return true;
+        }
+        return false;
+      });
     }
 
     if (filterValue) {
@@ -1593,7 +1642,7 @@ const MerchandiseTransaction: React.FC = () => {
     }
 
     return result;
-  }, [dataWithCreatorNames, filterValue, selectedProduct, variantFilter, dateFilter, paymentStatusFilter]);
+  }, [dataWithCreatorNames, filterValue, selectedProduct, variantFilter, dateFilter, paymentStatusFilter, transactionStatuses]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
 
@@ -1629,8 +1678,12 @@ const MerchandiseTransaction: React.FC = () => {
     [filtered]
   );
 
-  const totalSuccessfulTransactions = useMemo(
-    () => filtered.filter(item => item.transaction_status_id === 2).length,
+  const totalPaidTransactions = useMemo(
+    () => filtered.filter((item) => {
+      if (item.transaction_status_id === 2) return true;
+      const name = (item.status_name || "").toLowerCase();
+      return name.includes("paid") || name.includes("success") || name.includes("berhasil") || name.includes("lunas");
+    }).length,
     [filtered]
   );
 
@@ -1654,7 +1707,7 @@ const MerchandiseTransaction: React.FC = () => {
       SKU: r.sku || "-",
       "Total Qty": r.total_qty,
       "Total Price": r.total_price,
-      "Transaction Status": getStatusInfo(r.transaction_status_id).text,
+      "Transaction Status": getStatusInfo(r.transaction_status_id, r.status_name).text,
       Voucher: r.voucher || "-",
     }));
 
@@ -1824,15 +1877,20 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </button>
 <Text fw={800} style={{ fontSize: 'clamp(20px, 5vw, 26px)' }} mb={0} c="dark.9">{t('merchTrx.title')}</Text>
 </Flex>
-          <Group gap="xl">
+          <Group gap="lg">
               <Stack gap={2}>
-                  <Text size="xs" fw={600} c="dimmed" tt="uppercase">{t('merchTrx.totalTransactions')}</Text>
-                  <Text size="xl" fw={700}>{filtered.length}</Text>
+                  <Text size="xs" fw={600} c="dimmed" tt="uppercase">{t('merchTrx.transactions')}</Text>
+                  <Text size="sm" fw={700} c="black">{filtered.length}</Text>
               </Stack>
               <Divider orientation="vertical" />
               <Stack gap={2}>
-                  <Text size="xs" fw={600} c="dimmed" tt="uppercase">Total Penjualan</Text>
-                  <Text size="xl" fw={700}>
+                  <Text size="xs" fw={600} c="dimmed" tt="uppercase">{t('merchTrx.paidTransactions')}</Text>
+                  <Text size="sm" fw={700} c="black">{totalPaidTransactions}</Text>
+              </Stack>
+              <Divider orientation="vertical" />
+              <Stack gap={2}>
+                  <Text size="xs" fw={700} c="dimmed" tt="uppercase">{t('merchTrx.totalSales')}</Text>
+                  <Text size="xl" fw={800} c="black">
                       <NumberFormatter prefix="Rp " value={totalPriceAllFiltered} thousandSeparator="." decimalSeparator="," />
                   </Text>
               </Stack>
@@ -1979,7 +2037,7 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                                 </thead>
                                 <tbody>
                                     {paginatedItems.map((item, idx) => {
-                                        const statusInfo = getStatusInfo(item.transaction_status_id);
+                                        const statusInfo = getStatusInfo(item.transaction_status_id, item.status_name);
                                         const shippingInfo = getShippingStatusInfo(item);
                                         const rowNumber = (page - 1) * rowsPerPage + idx + 1;
                                         return (

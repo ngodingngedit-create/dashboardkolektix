@@ -878,6 +878,8 @@
   "merchTrx.productWithVariant": "Product Name (with Variant)",
   "merchTrx.title": "Merchandise Transactions",
   "merchTrx.totalTransactions": "Total Transactions",
+  "merchTrx.transactions": "Transactions",
+  "merchTrx.paidTransactions": "Paid Transactions",
   "merchTrx.totalSales": "Total Sales",
   "merchTrx.filterProduct": "Product Filter",
   "merchTrx.allProducts": "All Products",

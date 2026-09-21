@@ -1240,11 +1240,20 @@ export default function Index({ }: Readonly<ComponentProps>) {
             label="Uang Diterima"
             placeholder="Masukkan jumlah uang"
             value={cashReceived}
-            onChange={(val) => setCashReceived(val as number)}
+            onChange={(val) => {
+              if (val === "" || val === null || typeof val === "undefined") {
+                setCashReceived("");
+                return;
+              }
+              const num = typeof val === "number" ? val : Number(val);
+              setCashReceived(Number.isNaN(num) ? "" : Math.max(0, num));
+            }}
             prefix="Rp "
             thousandSeparator="."
+            decimalSeparator=","
             size="md"
             min={0}
+            allowNegative={false}
             hideControls
             styles={{ input: { fontSize: '18px', fontWeight: 600 } }}
             data-autofocus
@@ -1281,18 +1290,35 @@ export default function Index({ }: Readonly<ComponentProps>) {
             </div>
           </Stack>
 
-          <Card withBorder p={14} radius="md" className="bg-gray-50">
-            <Flex justify="space-between" align="center">
-              <Text fw={600} c="gray.7">Kembalian</Text>
-              <Text fw={800} size="lg" c={Number(cashReceived) >= handleSummary.total ? "green.6" : "red.6"}>
-                <NumberFormatter
-                  prefix="Rp "
-                  value={Math.max(0, Number(cashReceived) - handleSummary.total)}
-                  thousandSeparator="."
-                />
-              </Text>
-            </Flex>
-          </Card>
+          <NumberInput
+            label="Kembalian"
+            description="Bisa diketik langsung — Uang Diterima otomatis menyesuaikan"
+            placeholder="Masukkan nominal kembalian"
+            value={Math.max(0, Number(cashReceived || 0) - handleSummary.total)}
+            onChange={(val) => {
+              if (val === "" || val === null || typeof val === "undefined") {
+                setCashReceived(handleSummary.total);
+                return;
+              }
+              const num = typeof val === "number" ? val : Number(val);
+              const clean = Number.isNaN(num) ? 0 : Math.max(0, num);
+              setCashReceived(handleSummary.total + clean);
+            }}
+            prefix="Rp "
+            thousandSeparator="."
+            decimalSeparator=","
+            size="md"
+            min={0}
+            allowNegative={false}
+            hideControls
+            styles={{
+              input: {
+                fontSize: '18px',
+                fontWeight: 700,
+                color: Number(cashReceived || 0) >= handleSummary.total ? '#2f9e44' : '#e03131',
+              },
+            }}
+          />
 
           <Button
             onClick={confirmCashCheckout}

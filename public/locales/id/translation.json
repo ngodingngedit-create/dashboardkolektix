@@ -878,6 +878,8 @@
   "merchTrx.productWithVariant": "Nama Produk (dengan Varian)",
   "merchTrx.title": "Transaksi Merchandise",
   "merchTrx.totalTransactions": "Total Transaksi",
+  "merchTrx.transactions": "Transaksi",
+  "merchTrx.paidTransactions": "Transaksi Paid",
   "merchTrx.totalSales": "Total Penjualan",
   "merchTrx.filterProduct": "Filter Produk",
   "merchTrx.allProducts": "Semua Produk",
