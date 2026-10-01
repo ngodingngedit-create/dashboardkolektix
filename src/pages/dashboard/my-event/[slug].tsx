@@ -1031,7 +1031,7 @@ const MyEventDetail = () => {
               liveReportLink={`https://api.kolektix.com/event/dashboard/${(data as any).slug_url || data.slug}`}
             />
 
-            <div className="flex flex-col items-center justify-center p-4 max-w-full min-w-full lg:min-w-60 w-full bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200 mt-4">
+            <div className="hidden md:flex flex-col items-center justify-center p-4 max-w-full min-w-full lg:min-w-60 w-full bg-white rounded-xl shadow-md mx-1 md:mx-0 border border-primary-light-200 mt-4">
               <h5 className="text-lg font-semibold mb-2">Share your event link</h5>
               <QrCode slug={window.location.hostname === "dashboard.kolektix.com" ? `https://kolektix.com/event/${data.slug}` : `${window.location.origin}/event/${data.slug}`} errorCorrectionLevel="H" margin={8} logoSizeRatio={0.22} />
               {
@@ -1052,10 +1052,10 @@ const MyEventDetail = () => {
               }
             </div>
 
-            <div className="text-center w-full my-4">
+            <div className="hidden md:block text-center w-full my-4">
               <Button label={t("event.checkIn")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkin`)} />
             </div>
-            <div className="text-center w-full my-4">
+            <div className="hidden md:block text-center w-full my-4">
               <Button label={t("event.sales")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/report`)} />
             </div>
           </div>
@@ -1558,6 +1558,33 @@ const MyEventDetail = () => {
                   </div>
                 </Tab>
               </Tabs>
+            </div>
+          </div>
+          {/* Mobile only: Share dulu, Checkin + Penjualan 2-grid paling bawah. Desktop tetap pakai sidebar (hidden di mobile). */}
+          <div className="md:hidden w-full mt-2 px-4 md:px-6">
+            <div className="qrcode-mobile-wrap flex flex-col items-center justify-center p-4 w-full bg-white rounded-xl shadow-md border border-primary-light-200 mt-2">
+              <h5 className="text-lg font-semibold mb-2">Share your event link</h5>
+              <QrCode slug={window.location.hostname === "dashboard.kolektix.com" ? `https://kolektix.com/event/${data.slug}` : `${window.location.origin}/event/${data.slug}`} errorCorrectionLevel="H" margin={8} logoSizeRatio={0.22} />
+              {
+                <Button
+                  label="Download QR Code"
+                  color="primary"
+                  className="mt-4"
+                  onClick={() => {
+                    const qrCodeCanvas = document.querySelector(".qrcode-mobile-wrap .qrcode canvas") as HTMLCanvasElement;
+                    if (qrCodeCanvas) {
+                      const link = document.createElement("a");
+                      link.href = qrCodeCanvas.toDataURL("image/png");
+                      link.download = `${data.slug}-qrcode.png`;
+                      link.click();
+                    }
+                  }}
+                />
+              }
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-2 mb-0">
+              <Button label={t("event.checkIn")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/checkin`)} />
+              <Button label={t("event.sales")} color="primary" className="w-full" onClick={() => router.push(`/dashboard/my-event/report`)} />
             </div>
           </div>
         </div>

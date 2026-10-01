@@ -37,7 +37,6 @@ import {
   faSort,
   faSortUp,
   faSortDown,
-  faArrowsRotate,
   faFileExcel
 } from "@fortawesome/free-solid-svg-icons";
 import useLoggedUser from "@/utils/useLoggedUser";
@@ -489,54 +488,53 @@ const VoucherPage = () => {
   };
 
   const renderList = () => (
-    <Stack gap={25}>
-<Flex gap={20} justify="space-between" align="center" wrap="wrap">
-<Flex align="center" gap={15}>
-<button
-type="button"
-onClick={() => router.push('/dashboard/my-event')}
-className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
->
-<FontAwesomeIcon icon={faArrowLeft} />
-</button>
-<Stack gap={0}>
-<Title order={1} size="h4" className="!text-lg md:!text-2xl">{t("voucher.title")}</Title>
-<Text size="sm" c="gray" className="!text-xs md:!text-sm">{t("voucher.subtitle")}</Text>
-</Stack>
-</Flex>
-        <Flex gap="md" align="center">
-          <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t("voucher.totalVoucher")}</Text>
-            <Text size="lg" fw={700}>{stats.total}</Text>
-          </Card>
-          <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t("voucher.totalUsed")}</Text>
-            <Text size="lg" fw={700} c="blue">{stats.used}</Text>
-          </Card>
-          <Button 
-            onClick={handleCreateClick} 
-            color="blue" 
-            size="md" 
-            radius="lg" 
-            px={24}
-            title={t("voucher.createVoucher")}
+    <Stack gap={16}>
+      <Flex gap={20} justify="space-between" align="center" wrap="nowrap" w="100%">
+        <Flex align="center" gap={15} style={{ minWidth: 0 }}>
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard/my-event')}
+            className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm shrink-0"
           >
-            <FontAwesomeIcon icon={faPlus} />
-          </Button>
+            <FontAwesomeIcon icon={faArrowLeft} />
+          </button>
+          <Stack gap={0}>
+            <Title order={1} size="h4" className="!text-lg md:!text-2xl">{t("voucher.title")}</Title>
+            <Text size="sm" c="gray" className="!text-xs md:!text-sm">{t("voucher.subtitle")}</Text>
+          </Stack>
         </Flex>
+        <Button
+          onClick={handleCreateClick}
+          color="blue"
+          size="md"
+          radius="lg"
+          px={24}
+          title={t("voucher.createVoucher")}
+          style={{ flexShrink: 0 }}
+        >
+          <FontAwesomeIcon icon={faPlus} />
+        </Button>
+      </Flex>
+      <Flex gap="md" justify="flex-end" wrap="wrap" w="100%">
+        <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+          <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t("voucher.totalVoucher")}</Text>
+          <Text size="lg" fw={700}>{stats.total}</Text>
+        </Card>
+        <Card withBorder radius="md" p="xs" style={{ minWidth: 140 }}>
+          <Text size="xs" c="dimmed" fw={700} tt="uppercase">{t("voucher.totalUsed")}</Text>
+          <Text size="lg" fw={700} c="blue">{stats.used}</Text>
+        </Card>
       </Flex>
 
       <Card withBorder p="md" radius="md" shadow="sm">
         <div className="overflow-x-auto">
-          <Flex gap="md" align="center" wrap="nowrap" style={{ minWidth: 'max-content' }}>
+          <Flex gap="md" align="center" justify="flex-end" wrap="nowrap" style={{ minWidth: 'max-content' }}>
           <TextInput className="shrink-0" placeholder={t("voucher.searchCode")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ width: 200 }} leftSection={<FontAwesomeIcon icon={faSearch} size="xs" />} />
           <Select className="shrink-0" placeholder={t("voucher.allModules")} value={moduleFilter} onChange={(v) => setModuleFilter(v || "all")} data={[{ value: "all", label: t("voucher.allModules") }, { value: "1", label: "Event" }, { value: "2", label: "Produk" }]} style={{ width: 130 }} />
           <Select className="shrink-0" placeholder={t("voucher.allEvents")} value={eventFilter} onChange={(v) => setEventFilter(v || "all")} data={[{ value: "all", label: t("voucher.allEvents") }, ...events.map(e => ({ value: e.id.toString(), label: e.name }))]} style={{ width: 160 }} />
           <Select className="shrink-0" placeholder={t("voucher.allTypes")} value={typeFilter} onChange={(v) => setTypeFilter(v || "all")} data={[{ value: "all", label: t("voucher.allTypes") }, { value: "persentase", label: t("voucher.percentage") }, { value: "nominal", label: t("voucher.nominal") }]} style={{ width: 130 }} />
           <Select className="shrink-0" placeholder={t("voucher.allStatus")} value={statusFilter} onChange={(v) => setStatusFilter(v || "all")} data={[{ value: "all", label: t("voucher.allStatus") }, { value: "active", label: t("common.active") }, { value: "inactive", label: t("common.inactive") }, { value: "expired", label: t("voucher.expired") }]} style={{ width: 130 }} />
-          <Button className="shrink-0" variant="light" color="gray" onClick={() => fetchVouchers(1)} loading={loading.includes("vouchers")} px={18}><FontAwesomeIcon icon={faArrowsRotate} /></Button>
           <Button className="shrink-0" variant="filled" color="green" radius="md" leftSection={<FontAwesomeIcon icon={faFileExcel} />} onClick={handleExport} disabled={sortedVouchers.length === 0}>{t("voucher.export")}</Button>
-          <Button className="shrink-0" variant="light" color="gray" onClick={() => { setSearchTerm(""); setEventFilter("all"); setTypeFilter("all"); setStatusFilter("all"); setModuleFilter("all"); fetchVouchers(1); }}>{t("voucher.reset")}</Button>
           </Flex>
         </div>
       </Card>

@@ -743,8 +743,8 @@ const Merch = () => {
             {/* Header and Tabs */}
             <div className="bg-white py-3 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center shadow-sm gap-4">
                 <div className="flex flex-col md:flex-row md:items-center gap-3 w-full">
-                    <div className="flex flex-row items-center gap-3 w-full">
-                        <div className="flex flex-col flex-1 min-w-0">
+                    <div className="flex flex-row items-center gap-3 w-full md:w-auto flex-none">
+                        <div className="flex flex-col flex-none w-[150px] sm:w-[180px] md:w-[190px] lg:w-[210px] min-w-0">
                             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">{t("event.selectEvent")}</span>
                             <Select
                                 value={selectedEvent ? String(selectedEvent) : null}
@@ -757,7 +757,7 @@ const Merch = () => {
                                 placeholder={eventList.length === 0 ? t("event.loadingEvents") : t("event.selectEvent")}
                                 disabled={eventList.length === 0}
                                 searchable
-                                className="flex-1"
+                                className="w-full"
                                 size="xs"
                                 radius="md"
                                 styles={{
@@ -767,7 +767,7 @@ const Merch = () => {
                         </div>
 
                         {activeTab === 'ticket' && selectedEvent && (
-                            <div className="flex flex-col flex-1 min-w-0">
+                            <div className="flex flex-col flex-none w-[150px] sm:w-[180px] md:w-[190px] lg:w-[210px] min-w-0">
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 ml-1">{t("event.selectTicket")}</span>
                                 <Select
                                     value={selectedTicket}
@@ -777,7 +777,7 @@ const Merch = () => {
                                     data={[{ value: 'all', label: t("event.allTicketsOption") }, ...ticketList]}
                                     disabled={ticketList.length === 0}
                                     searchable
-                                    className="flex-1"
+                                    className="w-full"
                                     size="xs"
                                     radius="md"
                                     styles={{
@@ -789,13 +789,13 @@ const Merch = () => {
                     </div>
 
                     {selectedEvent && (
-                        <div className="flex gap-2 justify-center md:justify-start">
-                            <div className="flex flex-col items-center bg-gray-50 border border-light-grey rounded-md px-3 py-1">
-                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{t("event.total")} {activeTab === 'ticket' ? t("event.paidTickets") : t("event.invitation")}</span>
+                        <div className="flex gap-2 justify-center md:justify-start flex-shrink-0">
+                            <div className="flex flex-col items-center bg-gray-50 border border-light-grey rounded-md px-3 py-1 flex-shrink-0 whitespace-nowrap">
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider whitespace-nowrap">{t("event.total")} {activeTab === 'ticket' ? t("event.paidTickets") : t("event.invitation")}</span>
                                 <span className="text-sm font-bold text-gray-800">{isLoadingStats ? '...' : stats.total}</span>
                             </div>
-                            <div className="flex flex-col items-center bg-green-50 border border-green-200 rounded-md px-3 py-1">
-                                <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider">{t("event.totalCheckin")}</span>
+                            <div className="flex flex-col items-center bg-green-50 border border-green-200 rounded-md px-3 py-1 flex-shrink-0 whitespace-nowrap">
+                                <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider whitespace-nowrap">{t("event.totalCheckin")}</span>
                                 <span className="text-sm font-bold text-green-700">{isLoadingStats ? '...' : stats.checkin}</span>
                             </div>
                         </div>

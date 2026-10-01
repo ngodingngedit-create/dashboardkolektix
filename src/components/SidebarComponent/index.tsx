@@ -1613,6 +1613,7 @@ import {
   faVanShuttle,
   faRoute,
   faCogs,
+  faSliders,
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
 import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
@@ -1700,7 +1701,7 @@ const sidebarData: SidebarData = [
   { id: 6, name: "Tracking Update", icon: faMap, role: "Admin", link: "/dashboard/admin/trackcheck" },
   { id: 6, name: "Update Resi", icon: faIdBadge, role: "Admin", link: "/dashboard/admin/resi" },
   { id: 6, name: "Venue", icon: faLocationDot, role: "Admin", link: "/dashboard/admin/venue" },
-  { id: 6, name: "Slider", icon: faLocationDot, role: "Admin", link: "/dashboard/admin/slider" },
+  { id: 6, name: "Slider", icon: faSliders, role: "Admin", link: "/dashboard/admin/slider" },
   // { id: 6, name: "Lowongan", icon: faBriefcase, role: "Admin", link: "/dashboard/admin/vacancy" },
   // { id: 6, name: "Talenta", icon: faStar, role: "Admin", link: "/dashboard/admin/talenta" },
   {
@@ -1963,8 +1964,23 @@ const sidebarData: SidebarData = [
         id: 3,
         name: "POS Produk",
         iconify: "hugeicons:cashier",
-        link: "/dashboard/merch-pos",
         role: "Creator",
+        submenu: [
+          {
+            id: 301,
+            name: "POS Produk",
+            iconify: "hugeicons:cashier",
+            link: "/dashboard/merch-pos",
+            role: "Creator",
+          },
+          {
+            id: 302,
+            name: "Transaksi Manual",
+            iconify: "solar:pen-bold",
+            link: "/dashboard/merch-pos/manual",
+            role: "Creator",
+          },
+        ],
       },
       {
         id: 4,
@@ -1998,6 +2014,13 @@ const sidebarData: SidebarData = [
             name: "Update Stock By Scan",
             iconify: "lucide:scan",
             link: "/dashboard/stockmanagement/scanner",
+            role: "Creator",
+          },
+          {
+            id: 105,
+            name: "Stock Report",
+            iconify: "solar:box-bold",
+            link: "/dashboard/stockmanagement/report",
             role: "Creator",
           },
         ],
@@ -2130,11 +2153,13 @@ const menuLabelKeys: Record<string, string> = {
   "Kelola Produk": "menu.manageProducts",
   "Transaksi Produk": "menu.productTransactions",
   "POS Produk": "menu.posProduct",
+  "Transaksi Manual": "menu.manualTransaction",
   "Pengambilan Produk": "menu.productPickup",
   "Delivery": "menu.delivery",
   "Stock Management ": "menu.stockManagement",
   "Stock Movement by List": "menu.stockMovementList",
   "Update Stock By Scan": "menu.updateStockScan",
+  "Stock Report": "menu.stockReport",
   "Store Location": "menu.storeLocation",
   "Kelola Venue": "menu.manageVenue",
   "Transaksi Venue": "menu.venueTransaction",

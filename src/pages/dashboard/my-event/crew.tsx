@@ -667,7 +667,18 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
 </Stack>
 </Flex>
           
-          <Stack align="flex-start md:flex-end" gap="md">
+          <Stack align="flex-end" gap="md" style={{ flexShrink: 0 }}>
+            <Button
+              onClick={handleAddClick}
+              leftSection={<FontAwesomeIcon icon={faPlus} size="xs" />}
+              color="blue.4"
+              size="sm"
+              radius="xl"
+              px="lg"
+              style={{ flexShrink: 0, alignSelf: 'flex-end' }}
+            >
+              {t("crew.addCrew")}
+            </Button>
             <Flex gap={8} wrap="wrap" justify="flex-end">
               {[
                 { label: t("crew.totalCrew"), value: stats.total, unit: "crew" },
@@ -704,17 +715,6 @@ className="w-10 h-10 rounded-full bg-white border border-primary-light-200 text-
                 </Paper>
               ))}
             </Flex>
-            
-            <Button
-              onClick={handleAddClick}
-              leftSection={<FontAwesomeIcon icon={faPlus} />}
-              color="blue.4"
-              size="md"
-              radius="xl"
-              px="xl"
-            >
-              {t("crew.addCrew")}
-            </Button>
           </Stack>
         </Flex>
 
