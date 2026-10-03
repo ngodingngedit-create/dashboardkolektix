@@ -373,7 +373,22 @@ const CreateEvent = () => {
     fetchMethod(eventId === null ? "event" : "event/" + eventId, {
       ...form,
       is_session: form.is_session ? 1 : 0,
-      // Don't send sessions array anymore when is_session is 1
+      // Gabungan: kirim sessions array + tiket dengan session_* per tiket
+      sessions: form.is_session
+        ? sessions.map((ses) => ({
+            ...ses,
+            inventories: (ses.inventories || []).map((inv: EventTicket) => ({
+              ...inv,
+              ticket_name: inv.name,
+              ticket_type: inv.ticket_type,
+              inventory_type: inv.ticket_category?.toUpperCase(),
+              ticket_category: inv.ticket_category,
+              available_seat_number: inv.available_seat?.join(","),
+              seat_color: inv.seat_color ?? "#194e9e",
+              ticket_description: inv.description,
+            })),
+          }))
+        : [],
       tickets: preparedTickets,
       has_event_ticket: preparedTickets,
       seatmap: form.tickets.some((e) => e.ticket_category == "Seated") && seatmapData ? JSON.stringify(seatmapData) : null,
@@ -665,11 +680,12 @@ const CreateEvent = () => {
               selectedKey={tab}
               onSelectionChange={(e) => setTab(e as string)}
               variant="solid"
+              fullWidth
               aria-label="Tabs variants"
               className="border border-b-2 border-primary-light-200 border-x-0 border-t-0"
               classNames={{
-                tabList: "pb-0 self-center font-semibold rounded-b-none bg-white overflow-x-auto flex-nowrap",
-                tab: "p-3 md:p-5",
+                tabList: "w-full pb-0 font-semibold rounded-b-none bg-white overflow-x-auto md:overflow-visible flex-nowrap gap-1 md:gap-2",
+                tab: "flex-1 px-4 md:px-6 py-3 md:py-4 text-sm md:text-[15px] whitespace-nowrap",
                 cursor: "rounded-b-none border-b-2 border-b-primary-base",
               }}
             >
@@ -821,19 +837,121 @@ const CreateEvent = () => {
                     </div>
 
                     {form.is_session === 1 && (
-                      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-start gap-3">
-                          <Icon icon="mdi:information" className="text-blue-600 mt-0.5" width={20} />
-                          <div className="text-sm">
-                            <p className="font-semibold text-blue-900 mb-2">Cara Setting Sesi:</p>
-                            <ul className="list-disc list-inside text-blue-800 space-y-1">
-                              <li>Buka tab <strong>Info Tiket</strong></li>
-                              <li>Saat <strong>membuat atau edit tiket</strong>, Anda bisa mengatur detail sesinya</li>
-                              <li>Setiap tiket dapat memiliki: Nama Sesi, Tanggal Sesi, Waktu Mulai & Selesai</li>
-                            </ul>
+                      <>
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <Icon icon="mdi:information" className="text-blue-600 mt-0.5" width={20} />
+                            <div className="text-sm">
+                              <p className="font-semibold text-blue-900 mb-2">Cara Setting Sesi:</p>
+                              <ul className="list-disc list-inside text-blue-800 space-y-1">
+                                <li>Tambah sesi di <strong>Daftar Sesi</strong> di bawah, lalu isi <strong>Inventory Tiket</strong> per sesi</li>
+                                <li>Atau buka tab <strong>Info Tiket</strong> — saat <strong>membuat atau edit tiket</strong>, Anda juga bisa mengatur detail sesinya</li>
+                                <li>Setiap tiket dapat memiliki: Nama Sesi, Tanggal Sesi, Waktu Mulai & Selesai</li>
+                              </ul>
+                            </div>
                           </div>
                         </div>
-                      </div>
+
+                        <div className="flex justify-between items-center mt-4 mb-3">
+                          <p className="font-semibold text-sm">Daftar Sesi</p>
+                          <div className="flex items-center gap-2 text-sm text-primary-dark cursor-pointer" onClick={openAddSession}>
+                            <button className="border-1.5 border-primary-dark rounded-full p-0.5 flex items-center justify-center">
+                              <FontAwesomeIcon icon={faPlus} size="sm" />
+                            </button>
+                            <p>Tambah Sesi</p>
+                          </div>
+                        </div>
+
+                        {sessions.length === 0 ? (
+                          <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light">
+                            Belum ada sesi. Tambah sesi untuk event ini.
+                          </Alert>
+                        ) : (
+                          <div className="flex flex-col gap-3">
+                            {sessions.map((ses, idx) => (
+                              <div key={idx} className="border border-primary-light-200 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="w-2 h-2 rounded-full bg-primary-base"></div>
+                                      <h4 className="font-semibold text-sm">{ses.session_name}</h4>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-grey ml-4">
+                                      <div className="flex items-center gap-1">
+                                        <Icon icon="mdi:calendar" width={14} />
+                                        <span>{ses.session_date || "-"}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Icon icon="mdi:clock-start" width={14} />
+                                        <span>{ses.start_time || "-"}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Icon icon="mdi:clock-end" width={14} />
+                                        <span>{ses.end_time || "-"}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => openEditSession(ses, idx)}
+                                      className="p-1.5 rounded-lg hover:bg-primary-light-100 text-grey hover:text-primary-base transition-colors"
+                                    >
+                                      <Icon icon="mdi:pencil" width={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteSession(idx)}
+                                      className="p-1.5 rounded-lg hover:bg-red-50 text-grey hover:text-red-500 transition-colors"
+                                    >
+                                      <Icon icon="mdi:trash-can-outline" width={16} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="border-t border-primary-light-100 mt-3 pt-3">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <p className="text-xs font-semibold text-grey uppercase tracking-wider">Inventory Tiket</p>
+                                    <div className="flex items-center gap-1.5 text-xs text-primary-dark cursor-pointer" onClick={() => openAddSessionTicket(idx)}>
+                                      <button className="border-1.5 border-primary-dark rounded-full p-0.5 flex items-center justify-center">
+                                        <FontAwesomeIcon icon={faPlus} size="xs" />
+                                      </button>
+                                      <p>Tambah Tiket</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                    {(!ses.inventories || ses.inventories.length === 0) ? (
+                                      <Alert icon={<Icon icon="uiw:information-o" />} color="gray" variant="light" classNames={{ root: "!p-3 !text-xs" }}>
+                                        Belum ada tiket untuk sesi ini
+                                      </Alert>
+                                    ) : (
+                                      ses.inventories.map((inv: EventTicket, invIdx: number) => (
+                                        <TicketContainer
+                                          key={invIdx}
+                                          type={inv.ticket_type}
+                                          category={inv.ticket_category}
+                                          price={inv.price}
+                                          ticketDate={inv.ticket_date}
+                                          ticketEnd={inv.ticket_end}
+                                          description={inv.description}
+                                          name={inv.name}
+                                          qty={inv.qty}
+                                          sold={0}
+                                          onEdit={() => openEditSessionTicket(idx, invIdx, inv)}
+                                          onDelete={() => deleteSessionTicket(idx, invIdx)}
+                                          isSoldout={inv.is_soldout}
+                                          isFinish={inv.is_finish}
+                                          isReady={inv.is_ready}
+                                          isFullbook={inv.is_fullbook}
+                                          isAdmin={false}
+                                        />
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

@@ -312,7 +312,7 @@ const StockReport = () => {
           <Text c="dimmed" size="sm">
             {products.length === 0 && !loadingProducts
               ? t("stock.noProducts")
-              : t("stock.noProductSelected")}
+              : t("stock.selectProductForReport")}
           </Text>
         </Box>
       );

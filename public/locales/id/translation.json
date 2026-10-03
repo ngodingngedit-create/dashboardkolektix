@@ -1182,7 +1182,7 @@
   "stock.selectProduct": "Pilih Produk",
   "stock.searchProduct": "Cari produk...",
   "stock.noProducts": "Tidak ada produk ditemukan untuk creator ini.",
-  "stock.noProductSelected": "Pilih produk untuk melihat laporan stoknya.",
+  "stock.selectProductForReport": "Pilih produk untuk melihat laporan stoknya.",
   "stock.loadingReport": "Memuat laporan stok...",
   "manual.title": "Transaksi Manual",
   "manual.desc": "Catat transaksi produk offline/manual.",

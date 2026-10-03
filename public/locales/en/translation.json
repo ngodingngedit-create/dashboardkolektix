@@ -1182,7 +1182,7 @@
   "stock.selectProduct": "Select Product",
   "stock.searchProduct": "Search product...",
   "stock.noProducts": "No products found for this creator.",
-  "stock.noProductSelected": "Select a product to view its stock report.",
+  "stock.selectProductForReport": "Select a product to view its stock report.",
   "stock.loadingReport": "Loading stock report...",
   "manual.title": "Manual Transaction",
   "manual.desc": "Record an offline/manual product transaction.",
