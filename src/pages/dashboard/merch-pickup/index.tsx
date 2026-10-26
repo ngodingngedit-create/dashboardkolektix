@@ -954,6 +954,7 @@ interface MerchandiseTransactionData {
   customer_email?: string;
   status_name?: string;
   payment_method?: string;
+  is_pickup?: number;
   isAvailable?: boolean; // Flag untuk menandai data yang tersedia
 }
 
@@ -1128,6 +1129,7 @@ const MerchPickupPage: React.FC = () => {
         customer_email: customerEmail,
         status_name: item.transaction_status?.name || "-",
         payment_method: item.payment_method || "-",
+        is_pickup: item.is_pickup !== undefined ? Number(item.is_pickup) : undefined,
         isAvailable: true // Data valid
       };
     } catch (error) {
@@ -1224,6 +1226,9 @@ const MerchPickupPage: React.FC = () => {
           return itemCreatorId === creatorId;
         });
       }
+
+      // Hanya tampilkan transaksi yang is_pickup === 1
+      filteredData = filteredData.filter((item: any) => Number(item.is_pickup) === 1);
 
       // Filter dan mapping data
       const mapped: MerchandiseTransactionData[] = filteredData

@@ -1,12 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
-import TableData from "@/components/TableData";
-import { Pagination as PaginationType } from "@/types/model";
-import fetch from "@/utils/fetch";
-import { LoadingOverlay, Stack, Flex, Text, Image, Group, Avatar, Badge, Button, TextInput, Select, FileInput, Textarea, Switch, Divider, Card, Box, Pagination, Grid, ActionIcon, Tooltip } from "@mantine/core";
+import { Get, Post, Put, Delete } from "@/utils/REST";
+import { LoadingOverlay, Stack, Flex, Text, Group, Avatar, Badge, Button, TextInput, PasswordInput, Select, Card, Box, Pagination, Grid, ActionIcon, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react";
-import { useDisclosure, useListState, useDebouncedValue } from "@mantine/hooks";
+import { useDebouncedValue } from "@mantine/hooks";
 import moment from "moment";
 import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
@@ -28,84 +26,65 @@ const tableCellStyle: React.CSSProperties = {
   verticalAlign: "middle",
 };
 
-// Interface untuk data creator (disesuaikan untuk user)
-interface CreatorProps {
+interface UserMapping {
   id: number;
-  user_id: string;
-  category_id: string;
-  slug: string;
-  name_event_organizer: string | null;
-  name: string;
-  image: string | null;
-  phone_number: string | null;
-  description: string | null;
-  longitude: string | null;
-  latitude: string | null;
-  website: string | null;
+  user_id: number;
+  role_id: number;
+  parent_id: number | null;
   status: string;
-  verified_status_id: number;
-  created_by: string | null;
-  updated_by: string | null;
-  event_coordinator_name: string | null;
-  event_cordinator_phone: string | null;
   created_at: string;
   updated_at: string;
-  deleted_at: string | null;
-  email: string | null;
-  location: string | null;
-  is_verified: number;
-  image_url: string;
-  has_category: any;
-  has_user: {
-    id: number;
-    name: string;
-    email: string;
-    phone: string | null;
-    email_verified_at: string | null;
-    otp_code: string | null;
-    otp_expiry_time: string | null;
-    created_at: string;
-    updated_at: string;
-    verified_status_id: number | null;
-    is_creator: number; // 0 = user biasa, 1 = creator
-  };
 }
+
+interface UserRow {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  has_creator: boolean;
+  creator: any;
+  has_talent: boolean;
+  talent: any;
+  has_mapping: boolean;
+  user_mapping: UserMapping | null;
+}
+
+interface PageMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  from: number | null;
+  to: number | null;
+  total: number;
+}
+
+const errMessage = (err: any, fallback: string) => err?.response?.data?.message || err?.message || fallback;
 
 export default function KelolaUser() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [loading, setLoading] = useListState<string>();
-  const [data, setData] = useState<CreatorProps[]>([]);
-  const [pagination, setPagination] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [data, setData] = useState<UserRow[]>([]);
+  const [meta, setMeta] = useState<PageMeta | null>(null);
+  const [page, setPage] = useState(1);
 
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<CreatorProps | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
+  const isEditMode = !!selectedUser;
 
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: "created_at", direction: "desc" });
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: null, direction: null });
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchQuery, 500);
 
-  // Form state untuk user
   const form = useForm({
     initialValues: {
-      // Data user
       name: "",
       email: "",
       phone: "",
-      is_creator: 0,
+      password: "",
       verified_status_id: 1,
-
-      // Data creator (hanya jika is_creator = 1)
-      name_event_organizer: "",
-      location: "",
-      phone_number: "",
-      description: "",
-      website: "",
-      status: "active",
-      image: null as File | null,
     },
-
     validate: {
       name: (value) => (!value ? t("admin.user.index.validation.nameRequired") : null),
       email: (value) => {
@@ -113,396 +92,110 @@ export default function KelolaUser() {
         if (!/^\S+@\S+$/.test(value)) return t("admin.user.index.validation.emailInvalid");
         return null;
       },
+      password: (value) => {
+        if (!value) return isEditMode ? null : t("admin.user.index.validation.passwordRequired");
+        return value.length < 8 ? t("admin.user.index.validation.passwordMin") : null;
+      },
     },
   });
 
   useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
     getData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, debouncedSearch]);
 
-  const getData = async (params?: string) => {
-    if (!loading.includes("getdata")) {
-      try {
-        await fetch<any, any>({
-          url: "creator" + (params ? `?${params}` : ""),
-          method: "GET",
-          data: {},
-          before: () => setLoading.append("getdata"),
-          success: (response) => {
-            console.log("API Response:", response);
+  const getData = async () => {
+    // ponytail: search sends ?search= and per_page=1000 so the client-side filter covers all users if the API ignores search; if API also ignores per_page, search only covers the current page. Upgrade: backend search.
+    const params: Record<string, string> = debouncedSearch
+      ? { page: "1", per_page: "1000", search: debouncedSearch.trim() }
+      : { page: String(page) };
 
-            // Filter data hanya untuk user dengan is_creator = 0
-            let filteredData: CreatorProps[] = [];
-
-            // Handle berbagai kemungkinan struktur response
-            if (response && response.data) {
-              let creators: CreatorProps[] = [];
-
-              if (Array.isArray(response.data.data)) {
-                creators = response.data.data;
-              } else if (Array.isArray(response.data)) {
-                creators = response.data;
-              } else if (response.data.items) {
-                creators = response.data.items;
-              } else {
-                creators = [response.data];
-              }
-
-              // Filter: hanya ambil data dengan has_user.is_creator === 0
-              filteredData = creators.filter((creator: CreatorProps) => creator.has_user?.is_creator === 0);
-            }
-
-            setData(filteredData);
-            setPagination(response?.data || response);
-          },
-          complete: () => setLoading.filter((e) => e !== "getdata"),
-          error: (error) => {
-            console.error("Error fetching data:", error);
-            notifications.show({
-              title: t("common.failed"),
-              message: t("admin.user.index.toast.fetchFailed"),
-              color: "red",
-            });
-          },
-        });
-      } catch (error) {
-        console.error("Fetch error:", error);
-      }
+    setLoading(true);
+    try {
+      const res: any = await Get(`admin-data/users?${new URLSearchParams(params).toString()}`, {});
+      const p = res?.data;
+      setData(Array.isArray(p?.data) ? p.data : []);
+      setMeta(p ? { current_page: p.current_page, last_page: p.last_page, per_page: p.per_page, from: p.from, to: p.to, total: p.total } : null);
+    } catch (err) {
+      notifications.show({ title: t("common.failed"), message: errMessage(err, t("admin.user.index.toast.fetchFailed")), color: "red" });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleAddClick = () => {
     setSelectedUser(null);
-    setIsEditMode(false);
     form.reset();
     setIsFormVisible(true);
   };
 
-  const handleEditClick = (user: any) => {
-    const userData = user as CreatorProps;
-    setSelectedUser(userData);
-    setIsEditMode(true);
-
-    // Isi form dengan data yang dipilih
-    form.setValues({
-      // Data user
-      name: userData.has_user?.name || "",
-      email: userData.has_user?.email || "",
-      phone: userData.has_user?.phone || "",
-      is_creator: userData.has_user?.is_creator || 0,
-      verified_status_id: userData.has_user?.verified_status_id || 1,
-
-      // Data creator
-      name_event_organizer: userData.name_event_organizer || "",
-      location: userData.location || "",
-      phone_number: userData.phone_number || "",
-      description: userData.description || "",
-      website: userData.website || "",
-      status: userData.status || "active",
-      image: null,
-    });
-
+  const handleEditClick = (user: UserRow) => {
+    setSelectedUser(user);
+    form.setValues({ name: user.name || "", email: user.email || "", phone: user.phone || "", password: "", verified_status_id: 1 });
     setIsFormVisible(true);
   };
 
-  const handleDelete = async (user: any) => {
-    const userData = user as CreatorProps;
-    if (!confirm(t("admin.user.index.confirm.delete", { name: userData.has_user?.name || "" }))) {
-      return;
-    }
-
-    // Perhatikan: Endpoint ini menghapus creator, bukan user
-    // Sesuaikan dengan API Anda jika ingin menghapus user
-    await fetch({
-      url: `creator/${userData.id}`,
-      method: "DELETE",
-      data: {},
-      before: () => setLoading.append("delete"),
-      success: () => {
-        notifications.show({
-          title: t("common.success"),
-          message: t("admin.user.index.toast.deleted"),
-          color: "green",
-        });
-        getData();
-      },
-      error: () => {
-        notifications.show({
-          title: t("common.failed"),
-          message: t("admin.user.index.toast.deleteFailed"),
-          color: "red",
-        });
-      },
-      complete: () => setLoading.filter((e) => e !== "delete"),
-    });
+  const closeForm = () => {
+    setIsFormVisible(false);
+    setSelectedUser(null);
+    form.reset();
   };
 
-  // Fungsi untuk auto-verify user setelah registrasi
-  const autoVerifyUser = async (email: string, otpCode: string): Promise<boolean> => {
+  const handleDelete = async (user: UserRow) => {
+    if (!confirm(t("admin.user.index.confirm.delete", { name: user.name || "" }))) return;
+    setLoading(true);
     try {
-      return new Promise((resolve) => {
-        fetch({
-          url: "verify-register",
-          method: "POST",
-          data: {
-            email: email,
-            otp_code: otpCode
-          },
-          success: () => {
-            console.log("Auto verification successful for:", email);
-            resolve(true);
-          },
-          error: (error) => {
-            console.error("Auto verification failed:", error);
-            resolve(false);
-          }
-        });
-      });
-    } catch (error) {
-      console.error("Verification request error:", error);
-      return false;
+      await Delete(`admin-data/users/${user.id}`, {});
+      notifications.show({ title: t("common.success"), message: t("admin.user.index.toast.deleted"), color: "green" });
+      getData();
+    } catch (err) {
+      notifications.show({ title: t("common.failed"), message: errMessage(err, t("admin.user.index.toast.deleteFailed")), color: "red" });
+      setLoading(false);
     }
   };
 
   const handleFormSubmit = async (values: typeof form.values) => {
-    if (isEditMode && selectedUser) {
-      // UPDATE USER DAN/ATAU CREATOR
-
-      // 1. Update data user di endpoint user
-      const userUpdateData = {
-        name: values.name,
-        email: values.email,
-        phone: values.phone,
-        is_creator: values.is_creator,
-        verified_status_id: values.verified_status_id,
-      };
-
-      try {
-        await fetch({
-          url: `users/${selectedUser.has_user?.id}`,
-          method: "PUT",
-          data: userUpdateData,
-          before: () => setLoading.append("submit"),
-          success: async () => {
-            // 2. Jika is_creator = 1, update juga data creator
-            if (values.is_creator === 1) {
-              await updateCreatorData(values);
-            } else {
-              notifications.show({
-                title: t("common.success"),
-                message: t("admin.user.index.toast.updated"),
-                color: "green",
-              });
-              getData();
-              setIsFormVisible(false);
-              form.reset();
-            }
-          },
-          error: (error) => {
-            notifications.show({
-              title: t("common.failed"),
-              message: error.message || t("admin.user.index.toast.updateFailed"),
-              color: "red",
-            });
-          },
-          complete: () => setLoading.filter((e) => e !== "submit"),
-        });
-      } catch (error) {
-        console.error("Update error:", error);
-        notifications.show({
-          title: t("common.error"),
-          message: t("admin.user.index.toast.updateSystemError"),
-          color: "red",
-        });
-      }
-    } else {
-      // TAMBAH USER BARU dengan auto-verification
-      const userData = {
-        name: values.name,
-        email: values.email,
-        phone: values.phone || "",
-        is_creator: values.is_creator,
-        verified_status_id: values.verified_status_id,
-      };
-
-      try {
-        await fetch({
-          url: "register",
-          method: "POST",
-          data: userData,
-          before: () => setLoading.append("submit"),
-          success: async (response) => {
-            console.log("Register response:", response);
-
-            // Cek apakah response mengandung OTP code
-            const otpCode = response.data?.otp_code;
-            const userEmail = values.email;
-            const userId = response.data?.id;
-
-            let verificationSuccess = false;
-
-            // Jika ada OTP code di response, lakukan auto verification
-            if (otpCode && userEmail) {
-              verificationSuccess = await autoVerifyUser(userEmail, otpCode);
-            }
-
-            // Jika is_creator = 1, buat data creator
-            if (values.is_creator === 1 && userId) {
-              await createCreatorData(values, userId);
-            }
-
-            // Tampilkan notifikasi berdasarkan hasil
-            if (verificationSuccess) {
-              notifications.show({
-                title: t("common.success"),
-                message: t("admin.user.index.toast.addedAutoVerified"),
-                color: "green",
-              });
-            } else if (otpCode) {
-              notifications.show({
-                title: t("common.success"),
-                message: t("admin.user.index.toast.addedVerifiedFailed"),
-                color: "orange",
-              });
-            } else {
-              notifications.show({
-                title: t("common.success"),
-                message: t("admin.user.index.toast.added"),
-                color: "green",
-              });
-            }
-
-            getData();
-            setIsFormVisible(false);
-            form.reset();
-          },
-          error: (error) => {
-            console.error("Register error:", error);
-            notifications.show({
-              title: t("common.failed"),
-              message: error.message || t("admin.user.index.toast.addFailed"),
-              color: "red",
-            });
-          },
-          complete: () => setLoading.filter((e) => e !== "submit"),
-        });
-      } catch (error) {
-        console.error("Create error:", error);
-        notifications.show({
-          title: t("common.error"),
-          message: t("admin.user.index.toast.createSystemError"),
-          color: "red",
-        });
-      }
-    }
-  };
-
-  const updateCreatorData = async (values: typeof form.values) => {
-    if (!selectedUser) return;
-
-    const formData = new FormData();
-
-    // Tambahkan data creator ke FormData
-    const creatorFields = {
-      name_event_organizer: values.name_event_organizer,
-      name: values.name, // Nama creator sama dengan nama user
-      location: values.location,
-      phone_number: values.phone_number,
-      description: values.description,
-      website: values.website,
-      status: values.status,
-      user_id: selectedUser.user_id,
-    };
-
-    Object.keys(creatorFields).forEach((key) => {
-      const value = creatorFields[key as keyof typeof creatorFields];
-      if (value !== null && value !== undefined && value !== "") {
-        formData.append(key, String(value));
-      }
-    });
-
-    if (values.image) {
-      formData.append("image", values.image);
-    }
-
-    await fetch({
-      url: `creator/${selectedUser.id}`,
-      method: "PUT",
-      data: formData,
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      success: () => {
-        notifications.show({
-          title: t("common.success"),
-          message: t("admin.user.index.toast.creatorUpdateSuccess"),
-          color: "green",
-        });
-      },
-      error: (error) => {
-        notifications.show({
-          title: t("common.warning"),
-          message: t("admin.user.index.toast.creatorUpdateWarning", { error: error.message || "" }),
-          color: "orange",
-        });
-      },
-    });
-  };
-
-  const createCreatorData = async (values: typeof form.values, userId: number) => {
-    const formData = new FormData();
-
-    // Data untuk membuat creator baru
-    const creatorFields = {
-      name_event_organizer: values.name_event_organizer,
+    const base = {
       name: values.name,
-      location: values.location,
-      phone_number: values.phone_number,
-      description: values.description,
-      website: values.website,
-      status: values.status,
-      user_id: userId.toString(),
+      email: values.email,
+      phone: values.phone || null,
+      verified_status_id: values.verified_status_id,
     };
 
-    Object.keys(creatorFields).forEach((key) => {
-      const value = creatorFields[key as keyof typeof creatorFields];
-      if (value !== null && value !== undefined && value !== "") {
-        formData.append(key, String(value));
+    setSubmitting(true);
+    try {
+      if (selectedUser) {
+        await Put(`admin-data/users/${selectedUser.id}`, values.password ? { ...base, password: values.password } : base);
+        notifications.show({ title: t("common.success"), message: t("admin.user.index.toast.updated"), color: "green" });
+        getData();
+      } else {
+        await Post("admin-data/users", { ...base, password: values.password, is_creator: false, google_id: null, avatar: null });
+        notifications.show({ title: t("common.success"), message: t("admin.user.index.toast.added"), color: "green" });
+        if (page === 1 && !debouncedSearch) getData();
+        else {
+          setSearchQuery("");
+          setPage(1);
+        }
       }
-    });
-
-    if (values.image) {
-      formData.append("image", values.image);
+      closeForm();
+    } catch (err: any) {
+      const errors = err?.response?.data?.errors;
+      if (errors && typeof errors === "object") {
+        form.setErrors(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, Array.isArray(v) ? v[0] : String(v)])));
+      }
+      notifications.show({
+        title: t("common.failed"),
+        message: errMessage(err, isEditMode ? t("admin.user.index.toast.updateFailed") : t("admin.user.index.toast.addFailed")),
+        color: "red",
+      });
+    } finally {
+      setSubmitting(false);
     }
-
-    await fetch({
-      url: "creator",
-      method: "POST",
-      data: formData,
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      success: () => {
-        console.log("Creator data created successfully");
-      },
-      error: (error) => {
-        console.error("Create creator error:", error);
-        notifications.show({
-          title: t("common.warning"),
-          message: t("admin.user.index.toast.creatorCreateWarning", { error: error.message || "" }),
-          color: "orange",
-        });
-      },
-    });
   };
-
-  const stats = useMemo(() => {
-    return {
-      total: data.length,
-      active: data.filter(d => d.status === "active").length,
-      verified: data.filter(d => d.is_verified === 1).length,
-    };
-  }, [data]);
 
   const filteredData = useMemo(() => {
     let result = [...data];
@@ -510,23 +203,22 @@ export default function KelolaUser() {
       const needle = debouncedSearch.toLowerCase().trim();
       result = result.filter(
         (item) =>
-          (item.has_user?.name && item.has_user.name.toLowerCase().includes(needle)) ||
-          (item.has_user?.email && item.has_user.email.toLowerCase().includes(needle)) ||
-          (item.name_event_organizer && item.name_event_organizer.toLowerCase().includes(needle))
+          item.name?.toLowerCase().includes(needle) ||
+          item.email?.toLowerCase().includes(needle) ||
+          item.phone?.toLowerCase().includes(needle)
       );
     }
     if (sortConfig.key && sortConfig.direction) {
-      result.sort((a: any, b: any) => {
-        let valA = a[sortConfig.key as string];
-        let valB = b[sortConfig.key as string];
-
-        if (sortConfig.key === "user") { valA = a.has_user?.name; valB = b.has_user?.name; }
-        if (sortConfig.key === "status") { valA = a.status; valB = b.status; }
-        if (sortConfig.key === "is_verified") { valA = a.is_verified; valB = b.is_verified; }
-
+      const pick = (r: UserRow): any => {
+        if (sortConfig.key === "created_at") return r.user_mapping?.created_at || "";
+        if (sortConfig.key === "status") return r.user_mapping?.status || "";
+        return (r as any)[sortConfig.key as string] ?? "";
+      };
+      result.sort((a, b) => {
+        let valA = pick(a);
+        let valB = pick(b);
         if (typeof valA === "string") valA = valA.toLowerCase();
         if (typeof valB === "string") valB = valB.toLowerCase();
-
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
         if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
@@ -542,11 +234,13 @@ export default function KelolaUser() {
     setSortConfig({ key, direction });
   };
 
+  const rowNumber = (idx: number) => (debouncedSearch || !meta ? idx + 1 : (meta.current_page - 1) * meta.per_page + idx + 1);
+
   const renderForm = () => (
     <Stack gap={25} className="p-[20px] md:p-[30px] pb-24" pos="relative">
       <Flex align="center" gap={15}>
         <Tooltip label={t("admin.user.index.kembali")}>
-          <ActionIcon variant="light" color="gray" onClick={() => setIsFormVisible(false)} size="lg" radius="xl">
+          <ActionIcon variant="light" color="gray" onClick={closeForm} size="lg" radius="xl">
             <Icon icon="mdi:arrow-left" width={20} />
           </ActionIcon>
         </Tooltip>
@@ -558,7 +252,7 @@ export default function KelolaUser() {
 
       <form id="user-form" onSubmit={form.onSubmit(handleFormSubmit)}>
         <Card withBorder padding="xl" radius="md" shadow="sm">
-          <LoadingOverlay visible={loading.includes("submit")} />
+          <LoadingOverlay visible={submitting} />
           <Stack gap="md">
             <Text fw={600} size="lg">{t("admin.user.index.data.user")}</Text>
             <Grid>
@@ -572,78 +266,36 @@ export default function KelolaUser() {
                 <TextInput label={t("admin.user.index.nomor.telepon")} placeholder={t("admin.user.index.contoh.081234567890")} {...form.getInputProps("phone")} />
               </Grid.Col>
               <Grid.Col span={{ base: 12, xs: 6 }}>
+                <PasswordInput
+                  label={t("admin.user.index.label.password")}
+                  description={isEditMode ? t("admin.user.index.hint.passwordKeepCurrent") : undefined}
+                  required={!isEditMode}
+                  autoComplete="new-password"
+                  {...form.getInputProps("password")}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, xs: 6 }}>
                 <Select
                   label={t("admin.user.index.status.verifikasi.user")}
                   data={[
                     { value: "1", label: t("admin.user.index.option.verified") },
                     { value: "0", label: t("admin.user.index.option.unverified") },
                   ]}
-                  value={form.values.verified_status_id?.toString()}
+                  value={form.values.verified_status_id.toString()}
                   onChange={(value) => form.setFieldValue("verified_status_id", parseInt(value || "1"))}
+                  allowDeselect={false}
                 />
               </Grid.Col>
             </Grid>
-
-            <Switch
-              label={t("admin.user.index.jadikan.sebagai.creator")}
-              description={t("admin.user.index.switch.creatorDesc")}
-              checked={form.values.is_creator === 1}
-              onChange={(event) => form.setFieldValue("is_creator", event.currentTarget.checked ? 1 : 0)}
-              mt="md"
-            />
-
-            {form.values.is_creator === 1 && (
-              <>
-                <Divider my="sm" />
-                <Text fw={600} size="lg">{t("admin.user.index.data.creator")}</Text>
-                <Text size="sm" c="dimmed">{t("admin.user.index.isi.data.berikut.jika.user.ini.juga.berperan.sebagai.creator.event.org")}</Text>
-
-                <Grid>
-                  <Grid.Col span={{ base: 12, xs: 6 }}>
-                    <TextInput label={t("admin.user.index.nama.event.organizer")} placeholder={t("admin.user.index.masukkan.nama.event.organizer")} {...form.getInputProps("name_event_organizer")} />
-                  </Grid.Col>
-                  <Grid.Col span={{ base: 12, xs: 6 }}>
-                    <TextInput label={t("admin.user.index.lokasi")} placeholder={t("admin.user.index.contoh.jakarta")} {...form.getInputProps("location")} />
-                  </Grid.Col>
-                  <Grid.Col span={{ base: 12, xs: 6 }}>
-                    <TextInput label={t("admin.user.index.nomor.telepon.creator")} placeholder={t("admin.user.index.contoh.081234567890")} {...form.getInputProps("phone_number")} />
-                  </Grid.Col>
-                  <Grid.Col span={{ base: 12, xs: 6 }}>
-                    <TextInput label={t("admin.user.index.website")} placeholder={t("admin.user.index.contoh.https.example.com")} {...form.getInputProps("website")} />
-                  </Grid.Col>
-                </Grid>
-
-                <Select
-                  label={t("admin.user.index.status.creator")}
-                  data={[
-                    { value: "active", label: t("admin.user.index.option.active") },
-                    { value: "inactive", label: t("admin.user.index.option.inactive") },
-                  ]}
-                  required
-                  {...form.getInputProps("status")}
-                />
-
-                <Textarea label={t("admin.user.index.deskripsi.creator")} placeholder={t("admin.user.index.masukkan.deskripsi.tentang.creator")} autosize minRows={2} {...form.getInputProps("description")} />
-
-                <FileInput
-                  label={t("admin.user.index.logo.gambar.creator")}
-                  placeholder={t("admin.user.index.pilih.file.gambar")}
-                  accept="image/*"
-                  onChange={(file) => form.setFieldValue("image", file)}
-                  clearable
-                  description={isEditMode && selectedUser?.image_url ? t("admin.user.index.file.keepCurrent") : ""}
-                />
-              </>
-            )}
           </Stack>
         </Card>
 
         <Box className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-light-grey px-5 md:px-[30px] py-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
           <Flex justify="flex-end" gap="md">
-            <Button variant="subtle" color="gray" onClick={() => setIsFormVisible(false)} disabled={loading.includes("submit")}>
+            <Button variant="subtle" color="gray" onClick={closeForm} disabled={submitting}>
               {t("admin.user.index.batal")}
             </Button>
-            <Button type="submit" form="user-form" color="blue" loading={loading.includes("submit")}>
+            <Button type="submit" form="user-form" color="blue" loading={submitting}>
               {isEditMode ? t("admin.user.index.button.saveEdit") : t("admin.user.index.button.saveAdd")}
             </Button>
           </Flex>
@@ -652,14 +304,24 @@ export default function KelolaUser() {
     </Stack>
   );
 
+  const columns = [
+    { label: t("admin.user.index.table.no"), sortable: false },
+    { label: t("admin.user.index.table.createdAt"), sortable: true, key: "created_at" },
+    { label: t("admin.user.index.table.user"), sortable: true, key: "name" },
+    { label: t("admin.user.index.table.contact"), sortable: false },
+    { label: t("admin.user.index.table.status"), sortable: true, key: "status" },
+    { label: t("admin.user.index.table.role"), sortable: false },
+    { label: t("admin.user.index.table.actions"), sortable: false, sticky: true },
+  ];
+
   const renderList = () => (
-    <Stack className="p-[20px] md:p-[30px]" gap={30}>
-      <LoadingOverlay visible={loading.includes("getdata")} />
+    <Stack className="p-[20px] md:p-[30px]" gap={30} pos="relative">
+      <LoadingOverlay visible={loading} />
 
       <Flex justify="space-between" align="center">
         <Flex align="center" gap={12}>
           <button
-            onClick={() => router.push('/dashboard/admin')}
+            onClick={() => router.push("/dashboard/admin")}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-primary-light-200 text-primary-base hover:bg-primary-light-100 transition-all shadow-sm"
             aria-label={t("admin.user.index.kembali.ke.dashboard.admin")}
           >
@@ -670,32 +332,19 @@ export default function KelolaUser() {
             <Text size="sm" c="black">{t("admin.user.index.daftar.semua.user.kolektix")}</Text>
           </Stack>
         </Flex>
-        <Button 
-          onClick={handleAddClick} 
-          leftSection={<Icon icon="ph:plus-bold" className="text-lg" />}
-          color="indigo"
-          radius="md"
-        >
+        <Button onClick={handleAddClick} leftSection={<Icon icon="ph:plus-bold" className="text-lg" />} color="indigo" radius="md">
           {t("admin.user.index.tambah.user")}
         </Button>
       </Flex>
 
-      <Box 
-        style={{ 
-          backgroundColor: "white", 
-          borderRadius: "12px", 
-          border: "1px solid #eee", 
-          overflow: "hidden",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.03)"
-        }}
-      >
+      <Box style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #eee", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
         <Flex justify="flex-end" align="center" gap={15} p="md" bg="white" wrap="nowrap" style={{ overflowX: "auto", borderBottom: "1px solid #eee" }}>
           <div style={{ width: 250, flexShrink: 0 }}>
             <Text size="xs" fw={700} c="dimmed" mb={4} ml={2}>{t("admin.user.index.pencarian")}</Text>
-            <TextInput 
-              placeholder={t("admin.user.index.cari.user.nama.email")} 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
+            <TextInput
+              placeholder={t("admin.user.index.cari.user.nama.email")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               leftSection={<Icon icon="ph:magnifying-glass" className="text-lg text-gray-400" />}
             />
           </div>
@@ -705,36 +354,27 @@ export default function KelolaUser() {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
             <thead>
               <tr style={{ backgroundColor: "#f8fafd", borderBottom: "1px solid #eee" }}>
-                {[
-                  { label: t("admin.user.index.table.no"), sortable: false },
-                  { label: t("admin.user.index.table.createdAt"), sortable: true, key: "created_at" },
-                  { label: t("admin.user.index.table.user"), sortable: true, key: "user" },
-                  { label: t("admin.user.index.table.contact"), sortable: false },
-                  { label: t("admin.user.index.table.status"), sortable: true, key: "status" },
-                  { label: t("admin.user.index.table.verification"), sortable: true, key: "is_verified" },
-                  { label: t("admin.user.index.table.actions"), sortable: false },
-                ].map((col, i) => (
-                  <th 
-                    key={i} 
-                    onClick={() => col.sortable && requestSort(col.key!)} 
-                    style={{ 
+                {columns.map((col, i) => (
+                  <th
+                    key={i}
+                    onClick={() => col.sortable && requestSort(col.key!)}
+                    style={{
                       ...tableHeadStyle,
                       cursor: col.sortable ? "pointer" : "default",
-                      position: col.label === t("admin.user.index.table.actions") ? "sticky" : "static", 
-                      right: col.label === t("admin.user.index.table.actions") ? 0 : "auto", 
-                      backgroundColor: col.label === t("admin.user.index.table.actions") ? "#f8fafd" : "transparent", 
-                      zIndex: col.label === t("admin.user.index.table.actions") ? 10 : 1 
+                      position: col.sticky ? "sticky" : "static",
+                      right: col.sticky ? 0 : "auto",
+                      backgroundColor: col.sticky ? "#f8fafd" : "transparent",
+                      zIndex: col.sticky ? 10 : 1,
                     }}
                   >
                     <Flex align="center" gap={6}>
                       {col.label}
-                      {col.sortable && (
-                        sortConfig.key === col.key ? (
+                      {col.sortable &&
+                        (sortConfig.key === col.key && sortConfig.direction ? (
                           <Icon icon={sortConfig.direction === "asc" ? "ph:caret-up-bold" : "ph:caret-down-bold"} width={12} className="text-indigo-500" />
                         ) : (
                           <Icon icon="ph:caret-up-down-bold" width={12} className="text-gray-300" />
-                        )
-                      )}
+                        ))}
                     </Flex>
                   </th>
                 ))}
@@ -743,7 +383,7 @@ export default function KelolaUser() {
             <tbody>
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: "60px", textAlign: "center" }}>
+                  <td colSpan={columns.length} style={{ padding: "60px", textAlign: "center" }}>
                     <Stack align="center" gap="xs">
                       <Icon icon="ph:user-circle-minus" className="text-5xl text-gray-300" />
                       <Text c="dimmed" fw={500}>{t("admin.user.index.data.user.tidak.ditemukan")}</Text>
@@ -752,74 +392,58 @@ export default function KelolaUser() {
                 </tr>
               ) : (
                 filteredData.map((item, idx) => (
-                  <tr 
-                    key={idx} 
+                  <tr
+                    key={item.id}
                     style={{ borderBottom: "1px solid #f1f3f5", transition: "background 0.2s" }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8fafd")}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
                     <td style={tableCellStyle}>
-                      <Text size="sm" fw={600} c="dimmed">
-                        {pagination?.current_page ? (Number(pagination.current_page) - 1) * (Number(pagination.per_page) || 10) + idx + 1 : idx + 1}
-                      </Text>
+                      <Text size="sm" fw={600} c="dimmed">{rowNumber(idx)}</Text>
                     </td>
                     <td style={tableCellStyle}>
-                      <Text size="sm">{item.created_at ? moment(item.created_at).format("DD MMM YYYY") : "-"}</Text>
+                      <Text size="sm">{item.user_mapping?.created_at ? moment(item.user_mapping.created_at).format("DD MMM YYYY") : "-"}</Text>
                     </td>
                     <td style={tableCellStyle}>
-                      <Group gap="sm">
+                      <Group gap="sm" wrap="nowrap">
                         <Avatar color="indigo" radius="sm" size="md" variant="light">
-                          {item.has_user?.name?.charAt(0) || "?"}
+                          {item.name?.charAt(0)?.toUpperCase() || "?"}
                         </Avatar>
                         <Stack gap={0}>
-                          <Text size="sm" fw={600} c="gray.8">{item.has_user?.name || "-"}</Text>
-                          <Text size="xs" c="dimmed">{item.has_user?.email || ""}</Text>
-                          <Text size="xs" c="indigo.4">{t("admin.user.index.id")} {item.user_id || "-"}</Text>
+                          <Text size="sm" fw={600} c="gray.8">{item.name || "-"}</Text>
+                          <Text size="xs" c="dimmed">{item.email || ""}</Text>
+                          <Text size="xs" c="indigo.4">{t("admin.user.index.id")} {item.id}</Text>
                         </Stack>
                       </Group>
                     </td>
                     <td style={tableCellStyle}>
-                      <Text size="sm" fw={500}>{item.has_user?.phone || "-"}</Text>
+                      <Text size="sm" fw={500}>{item.phone || "-"}</Text>
                     </td>
                     <td style={tableCellStyle}>
-                      <Badge 
-                        color={item.status === "active" ? "teal" : "gray"} 
-                        variant="filled" 
-                        radius="xs"
-                        size="xs"
-                      >
-                        {item.status === "active" ? t("admin.user.index.badge.aktif") : t("admin.user.index.badge.nonaktif")}
-                      </Badge>
+                      {item.user_mapping ? (
+                        <Badge color={item.user_mapping.status === "active" ? "teal" : "gray"} variant="filled" radius="xs" size="xs">
+                          {item.user_mapping.status === "active" ? t("admin.user.index.badge.aktif") : t("admin.user.index.badge.nonaktif")}
+                        </Badge>
+                      ) : (
+                        <Text size="sm" c="dimmed">-</Text>
+                      )}
                     </td>
                     <td style={tableCellStyle}>
-                      <Badge 
-                        color={item.is_verified === 1 ? "indigo" : "orange"} 
-                        variant="filled" 
-                        radius="xs"
-                        size="xs"
-                      >
-                        {item.is_verified === 1 ? t("admin.user.index.badge.verified") : t("admin.user.index.badge.pending")}
-                      </Badge>
+                      <Group gap={4}>
+                        {item.has_creator && <Badge color="violet" variant="light" radius="xs" size="xs">{t("admin.user.index.badge.creator")}</Badge>}
+                        {item.has_talent && <Badge color="pink" variant="light" radius="xs" size="xs">{t("admin.user.index.badge.talent")}</Badge>}
+                        {!item.has_creator && !item.has_talent && <Badge color="gray" variant="light" radius="xs" size="xs">{t("admin.user.index.badge.user")}</Badge>}
+                      </Group>
                     </td>
                     <td style={{ ...tableCellStyle, position: "sticky", right: 0, backgroundColor: "inherit", zIndex: 5, boxShadow: "-4px 0 8px rgba(0,0,0,0.02)" }}>
                       <Flex gap={6}>
                         <Tooltip label={t("admin.user.index.edit.data")} withArrow>
-                          <ActionIcon 
-                            variant="filled" 
-                            color="indigo" 
-                            onClick={() => handleEditClick(item)}
-                            size="sm"
-                          >
+                          <ActionIcon variant="filled" color="indigo" onClick={() => handleEditClick(item)} size="sm" aria-label={t("admin.user.index.edit.data")}>
                             <Icon icon="ph:pencil-simple" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
                         <Tooltip label={t("admin.user.index.hapus.user")} withArrow>
-                          <ActionIcon 
-                            variant="filled" 
-                            color="red" 
-                            onClick={() => handleDelete(item)}
-                            size="sm"
-                          >
+                          <ActionIcon variant="filled" color="red" onClick={() => handleDelete(item)} size="sm" aria-label={t("admin.user.index.hapus.user")}>
                             <Icon icon="ph:trash" className="text-lg" />
                           </ActionIcon>
                         </Tooltip>
@@ -833,9 +457,12 @@ export default function KelolaUser() {
         </Box>
       </Box>
 
-      {pagination && pagination.last_page > 1 && (
-        <Flex justify="center" mt="md">
-          <Pagination total={pagination.last_page} value={pagination.current_page} onChange={(page: number) => getData(`page=${page}`)} color="blue" />
+      {meta && !debouncedSearch && (
+        <Flex justify="space-between" align="center" wrap="wrap" gap="sm">
+          <Text size="sm" c="dimmed">
+            {t("admin.user.index.pageInfo", { from: meta.from ?? 0, to: meta.to ?? 0, total: meta.total })}
+          </Text>
+          {meta.last_page > 1 && <Pagination total={meta.last_page} value={page} onChange={setPage} color="blue" />}
         </Flex>
       )}
     </Stack>

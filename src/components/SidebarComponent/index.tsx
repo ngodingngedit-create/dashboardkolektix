@@ -1631,7 +1631,7 @@ import { Get } from "@/utils/REST";
 import config from "@/Config";
 import axios from "axios";
 import { useClickOutside } from "@mantine/hooks";
-import { Flex, Menu, Stack, Text, Tooltip } from "@mantine/core";
+import { ActionIcon, Flex, Menu, Stack, Text, Tooltip } from "@mantine/core";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useTranslation } from "react-i18next";
 import { isStaffCheckinUser, isKasirUser, getAllowedStaffLinks } from "@/utils/staffCheckin";
@@ -2289,6 +2289,11 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
     return role;
   }, [users, role]);
 
+  const hasMerchPermission = useMemo(() => {
+    if (role === "Admin" || route.startsWith("/dashboard/admin")) return false;
+    return !!users?.permissions?.some((p: any) => p.module_id === 2);
+  }, [role, route, users]);
+
   const filteredSidebarData = useMemo(() => {
     console.log("🔄 Filtering menu with role:", role, "and user:", users?.name);
 
@@ -2656,10 +2661,24 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
           <div className="min-w-0 flex-1 overflow-x-clip">
             <div className={`transition-all ease-in-out delay-150 overflow-y-auto max-h-[100vh] max-w-[100%]`}>
               <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <div className="hidden md:block">
                     <Burgers isOpen={collapse} setIsOpen={setCollapse} />
                   </div>
+                  {hasMerchPermission && (
+                    <Tooltip label="POS Merchandise" withArrow position="bottom">
+                      <ActionIcon
+                        variant="subtle"
+                        color="blue"
+                        size={38}
+                        radius="md"
+                        onClick={() => router.push("/dashboard/merch-pos")}
+                        aria-label="POS Merchandise"
+                      >
+                        <Icon icon="hugeicons:cashier" className="text-2xl text-[#0B387C]" />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
                   {/* <h3>
                                     {route === '/dashboard'
                                         ? 'Dashboard'
