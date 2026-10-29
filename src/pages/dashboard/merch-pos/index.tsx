@@ -25,6 +25,7 @@ import {
   TextInput,
   UnstyledButton,
   Popover,
+  Select,
 } from "@mantine/core";
 import { MerchListResponse } from "../merch/type";
 import { useEffect, useMemo, useState } from "react";
@@ -149,7 +150,8 @@ export default function Index({ }: Readonly<ComponentProps>) {
   const [productPage, setProductPage] = useState(1);
   const [productTotalPages, setProductTotalPages] = useState(1);
   const [productTotal, setProductTotal] = useState(0);
-  const [productPerPage, setProductPerPage] = useState(10);
+  const [productPerPage, setProductPerPage] = useState(24);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>("all");
 
   const {
     values: custValue,
@@ -473,6 +475,23 @@ export default function Index({ }: Readonly<ComponentProps>) {
     });
   };
 
+  const categoryOptions = useMemo(() => {
+    const cats = new Set<string>();
+    merch.forEach((item: any) => {
+      const catName =
+        item.category?.name ||
+        item.has_category?.name ||
+        item.product_category?.name ||
+        item.category_name ||
+        item.product_varian?.[0]?.product_varian_category?.varian_name;
+      if (catName) cats.add(catName);
+    });
+    return [
+      { value: "all", label: "Semua Kategori" },
+      ...Array.from(cats).map((c) => ({ value: c, label: c })),
+    ];
+  }, [merch]);
+
   const merchList = useMemo(() => {
     const normalize = (s: unknown) =>
       (s ?? "")
@@ -486,14 +505,24 @@ export default function Index({ }: Readonly<ComponentProps>) {
     return (
       merch
         ?.filter(Boolean)
-        .filter((e) => {
+        .filter((e: any) => {
+          if (selectedCategory && selectedCategory !== "all") {
+            const catName =
+              e.category?.name ||
+              e.has_category?.name ||
+              e.product_category?.name ||
+              e.category_name ||
+              e.product_varian?.[0]?.product_varian_category?.varian_name;
+            if (catName !== selectedCategory) return false;
+          }
+
           if (!q) return true;
 
           const name = normalize(e.product_name);
           const skuMain = normalize((e as any).sku);
 
-          const variantSKUs = (e.product_varian ?? []).map((v) => normalize(v?.sku));
-          const variantNames = (e.product_varian ?? []).map((v) => normalize(v?.varian_name));
+          const variantSKUs = (e.product_varian ?? []).map((v: any) => normalize(v?.sku));
+          const variantNames = (e.product_varian ?? []).map((v: any) => normalize(v?.varian_name));
 
           const searchableParts = [name, skuMain, ...variantSKUs, ...variantNames].filter(Boolean);
           const searchable = searchableParts.join(" | ");
@@ -508,7 +537,7 @@ export default function Index({ }: Readonly<ComponentProps>) {
           stock: (e.product_varian?.length ?? 0) > 0 ? e.product_varian.reduce((sum, v) => sum + (v.stock_qty ?? 0), 0) : (e.qty ?? 0),
         })) ?? []
     );
-  }, [merch, searchQuery]);
+  }, [merch, searchQuery, selectedCategory]);
 
   const visibleTransactions = useMemo(() => {
     const search = transactionSearch.trim().toLowerCase();
@@ -1472,46 +1501,70 @@ export default function Index({ }: Readonly<ComponentProps>) {
         )}
       </Modal>
 
-      <Flex gap={15} direction={{ base: 'column', sm: 'row' }} className={`flex-grow min-h-0 overflow-y-auto md:overflow-hidden pb-24 md:pb-0`}>
-        <Card withBorder w="100%" radius={10} className={`h-auto md:h-full md:min-w-0 overflow-hidden flex flex-col ${activeTab === "transactions" ? "md:!w-[360px]" : "md:!w-[46%]"}`}>
+      <Flex gap={15} direction={{ base: 'column', md: 'row' }} className={`flex-grow min-h-0 overflow-y-auto md:overflow-hidden pb-24 md:pb-0`}>
+        <Card withBorder w="100%" radius={10} className={`h-auto md:h-full md:min-w-0 overflow-hidden flex flex-col ${activeTab === "transactions" ? "md:!w-[380px]" : "md:!w-1/2 md:flex-1"}`}>
           <LoadingOverlay visible={loading.includes("getdata")} />
-          <Stack gap={20} h="100%" className="flex flex-col">
-            <div className="justify-between items-center border-b border-light-grey pb-4 flex flex-col md:flex-row gap-3 md:gap-0">
+          <Stack gap={12} h="100%" className="flex flex-col">
+            <div className="justify-between items-center border-b border-light-grey pb-2.5 flex flex-col sm:flex-row gap-2">
               <div>
-                <Text fw={700} size="lg" c="#0B387C">
+                <Text fw={700} size="md" c="#0B387C">
                   Pilih Produk
                 </Text>
-                <Text size="xs" c="gray.5">
-                  Menampilkan produk untuk toko Anda
+                <Text size="11px" c="gray.5">
+                  Menampilkan produk toko (24 per halaman)
                 </Text>
               </div>
-              <TextInput
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                leftSection={<Icon icon="uiw:search" />}
-                placeholder="Cari Produk..."
-                className="w-full md:w-64 shrink-0"
-                styles={{
-                  input: {
-                    backgroundColor: "#F0F4FA",
-                    border: "none",
-                    borderRadius: "10px",
-                  }
-                }}
-              />
+              <Flex gap={6} className="w-full sm:w-auto" wrap={{ base: "wrap", sm: "nowrap" }}>
+                <Select
+                  value={selectedCategory}
+                  onChange={(val) => setSelectedCategory(val)}
+                  data={categoryOptions}
+                  placeholder="Filter Kategori"
+                  size="xs"
+                  className="w-full sm:w-36"
+                  styles={{
+                    input: {
+                      backgroundColor: "#F0F4FA",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "11px",
+                      height: "30px",
+                      minHeight: "30px",
+                    },
+                  }}
+                />
+                <TextInput
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  leftSection={<Icon icon="uiw:search" width={12} />}
+                  placeholder="Cari Produk..."
+                  size="xs"
+                  className="w-full sm:w-44"
+                  styles={{
+                    input: {
+                      backgroundColor: "#F0F4FA",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "11px",
+                      height: "30px",
+                      minHeight: "30px",
+                    },
+                  }}
+                />
+              </Flex>
             </div>
 
-            <div className="overflow-y-auto flex-grow max-h-[50vh] md:max-h-none">
+            <div className="overflow-y-auto flex-grow max-h-[55vh] md:max-h-none pr-1">
               {merchList?.length === 0 ? (
                 <Alert radius={10} color="gray" icon={<Icon icon="uiw:information-o" />} mt={20}>
                   {searchQuery ? "Tidak ada produk yang cocok dengan pencarian" : "Tidak ada produk yang ditemukan untuk toko Anda"}
                 </Alert>
               ) : (
-                <div className="flex flex-col gap-0">
+                <div className="grid grid-cols-6 gap-1.5">
                   {(() => {
                     const formatPriceRange = (prices: number[]) => {
                       if (!prices || prices.length === 0) return "";
-                      const formatted = prices.map(p => p >= 1000 ? `${p / 1000}k` : String(p));
+                      const formatted = prices.map((p) => (p >= 1000 ? `${p / 1000}k` : String(p)));
                       if (formatted.length === 1) return `Rp ${formatted[0]}`;
                       return `Rp ${formatted[0]} - ${formatted[formatted.length - 1]}`;
                     };
@@ -1519,63 +1572,81 @@ export default function Index({ }: Readonly<ComponentProps>) {
                     return merchList?.map((e, i) => {
                       const isOutOfStock = (e.stock ?? 0) <= 0;
                       return (
-                        <div
+                        <Card
                           key={i}
+                          withBorder
+                          p={5}
+                          radius="sm"
                           onClick={() => !isOutOfStock && e.raw && handleAddProduct(e.raw)}
-                          className="flex items-center justify-between py-3 border-b border-light-grey hover:bg-gray-50/50 transition-colors duration-150 px-2 cursor-pointer"
+                          className={`flex flex-col justify-between hover:shadow-sm transition-all duration-150 cursor-pointer ${
+                            isOutOfStock ? "opacity-60 bg-gray-50 cursor-not-allowed" : "hover:border-primary-base bg-white"
+                          }`}
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="relative w-14 h-14 overflow-hidden rounded-lg bg-gray-100 flex-shrink-0">
-                              <Image
-                                src={e.image}
-                                width={56}
-                                height={56}
-                                fit="cover"
-                                fallbackSrc="https://placehold.co/100x100/EBF4FF/0B387C?text=Produk"
-                                className="object-cover"
-                              />
-                              {isOutOfStock && (
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                  <div className="bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded uppercase">
-                                    HABIS
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                          <div className="relative w-full aspect-square overflow-hidden rounded bg-gray-100 mb-1">
+                            <Image
+                              src={e.image}
+                              width="100%"
+                              height="100%"
+                              fit="cover"
+                              fallbackSrc="https://placehold.co/150x150/EBF4FF/0B387C?text=P"
+                              className="object-cover w-full h-full"
+                            />
+                            {isOutOfStock && (
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <span className="bg-red-600 text-white text-[7px] font-bold px-1 py-0.5 rounded uppercase leading-none">
+                                  HABIS
+                                </span>
+                              </div>
+                            )}
+                          </div>
 
+                          <div className="flex flex-col flex-grow justify-between gap-1">
                             <div>
-                              <Text size="sm" fw={600} className="text-gray-800">
+                              <Text size="10px" fw={600} lineClamp={1} className="text-gray-800 leading-tight" title={e.name}>
                                 {e.name}
                               </Text>
                               {isOutOfStock ? (
-                                <Text size="xs" c="red" className="font-medium">
-                                  Stok Habis
+                                <Text size="9px" c="red" fw={600} className="leading-tight">
+                                  Habis
                                 </Text>
                               ) : (
-                                <Text size="xs" c="green" className="font-medium">
+                                <Text size="9px" c="teal" fw={600} className="leading-tight">
                                   Stok: {e.stock}
                                 </Text>
                               )}
                             </div>
-                          </div>
 
-                          <div className="flex flex-col items-end gap-1.5">
-                            <Text size="sm" fw={700} className="text-primary-base">
-                              {formatPriceRange(e.price ?? [])}
-                            </Text>
-                            <Button
-                              disabled={isOutOfStock}
-                              variant={isOutOfStock ? "filled" : "light"}
-                              color={isOutOfStock ? "gray" : "blue"}
-                              size="xs"
-                              radius="md"
-                              className={isOutOfStock ? "!bg-[#F0F2F5] !text-[#A0AEC0] cursor-not-allowed" : ""}
-                              onClick={() => !isOutOfStock && e.raw && handleAddProduct(e.raw)}
-                            >
-                              Tambah
-                            </Button>
+                            <div className="pt-0.5">
+                              <Text size="10px" fw={700} c="#0B387C" className="truncate leading-tight">
+                                {formatPriceRange(e.price ?? [])}
+                              </Text>
+                              <Button
+                                disabled={isOutOfStock}
+                                variant={isOutOfStock ? "filled" : "light"}
+                                color={isOutOfStock ? "gray" : "blue"}
+                                size="compact-xs"
+                                fullWidth
+                                radius="xs"
+                                mt={2}
+                                styles={{
+                                  root: {
+                                    height: "20px",
+                                    paddingLeft: "4px",
+                                    paddingRight: "4px",
+                                    fontSize: "9px",
+                                  },
+                                }}
+                                className={isOutOfStock ? "!bg-[#F0F2F5] !text-[#A0AEC0] cursor-not-allowed" : ""}
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  if (!isOutOfStock && e.raw) handleAddProduct(e.raw);
+                                }}
+                              >
+                                {isOutOfStock ? "Habis" : "+"}
+                              </Button>
+                            </div>
                           </div>
-                        </div>
+                        </Card>
                       );
                     });
                   })()}

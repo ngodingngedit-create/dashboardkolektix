@@ -98,6 +98,7 @@ const CreateEventAdmin = () => {
     // Admin specific
     slug: "",
     event_status_id: 3,
+    payment_method_id: 4,
     payment_method_custom: "QRIS,BCA,BNI,BRI,MANDIRI",
     max_use_voucher: 2,
     admin_fee: 2000,
@@ -229,6 +230,7 @@ const CreateEventAdmin = () => {
         })),
       })) : [],
       tickets: ticket.map((e) => ({ ...e, available_seat_number: e.available_seat?.join(","), seat_color: e.seat_color ?? "#194e9e" })),
+      payment_method_id: Number(form.payment_method_id || 4),
       seatmap: ticket.some((e) => e.ticket_category == "Seated") && seatmapData ? JSON.stringify(seatmapData) : null,
     };
 
@@ -760,8 +762,25 @@ const CreateEventAdmin = () => {
                         <SelectItem key="3" value="3">{t("admin.event.create.3.active")}</SelectItem>
                       </Select>
                     </MantineGrid.Col>
-                    <MantineGrid.Col span={12}>
+                    <MantineGrid.Col span={{ base: 12, xs: 6 }}>
                       <InputField label={t("admin.event.create.metode.pembayaran.custom")} type="text" fullWidth value={form.payment_method_custom} onChange={(e: any) => setForm({ ...form, payment_method_custom: e.target.value })} />
+                    </MantineGrid.Col>
+                    <MantineGrid.Col span={{ base: 12, xs: 6 }}>
+                      <Select
+                        label="Payment Gateway"
+                        placeholder="Pilih Payment Gateway"
+                        variant="bordered"
+                        radius="sm"
+                        classNames={{
+                          trigger: "!shadow-none"
+                        }}
+                        selectedKeys={form.payment_method_id ? [form.payment_method_id.toString()] : ["4"]}
+                        onChange={(e: any) => setForm({ ...form, payment_method_id: Number(e.target.value) })}
+                      >
+                        <SelectItem key="4" value="4">Xendit (ID: 4 - Default)</SelectItem>
+                        <SelectItem key="6" value="6">DANA (ID: 6)</SelectItem>
+                        <SelectItem key="7" value="7">Faspay (ID: 7)</SelectItem>
+                      </Select>
                     </MantineGrid.Col>
                     <MantineGrid.Col span={{ base: 12, xs: 6 }}>
                       <InputField label={t("admin.event.create.admin.fee")} type="text" fullWidth value={formatPrice(form.admin_fee)} onChange={(e: any) => setForm({ ...form, admin_fee: parsePrice(e.target.value) })} />

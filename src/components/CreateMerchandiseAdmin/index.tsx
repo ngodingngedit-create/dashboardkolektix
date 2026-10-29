@@ -45,6 +45,7 @@ interface MerchandiseState {
     promo_end_time?: string | null;
   }> | null;
   status: boolean | null;
+  supplier_id?: number | null;
   store_location_id: number | null;
   is_delivery: boolean;
   is_pickup_instore: boolean;
@@ -189,6 +190,7 @@ const storeSchema = z.object<Record<keyof MerchandiseState, z.ZodTypeAny>>({
     .optional()
     .nullable(),
   status: z.boolean().nullable().optional(),
+  supplier_id: z.number().nullable().optional(),
   store_location_id: z.number().nullable().optional(),
   is_delivery: z.boolean().nullable().optional(),
   is_pickup_instore: z.boolean().nullable().optional(),
@@ -257,6 +259,7 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
   const [variantCategory, setVariantCategory] = useState<VariantCategoryListResponse[]>();
   const [selectedCreatorData, setSelectedCreatorData] = useState<CreatorAPIResponse | null>(null);
   const [storeLocations, setStoreLocations] = useState<StoreLocationOption[]>([]);
+  const [suppliers, setSuppliers] = useState<{ value: string; label: string }[]>([]);
   const [activePromoVariant, setActivePromoVariant] = useState<number | null>(null);
   const user = useLoggedUser();
 
@@ -272,7 +275,24 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
 
   useEffect(() => {
     getData();
+    getSuppliers();
   }, []);
+
+  const getSuppliers = () => {
+    Get(`creator-data/dropdown-suppliers`, {})
+      .then((res: any) => {
+        const list = res?.data || [];
+        if (Array.isArray(list)) {
+          setSuppliers(
+            list.map((s: any) => ({
+              value: String(s.id),
+              label: s.name,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  };
 
   // Fetch data creator jika creatorId diberikan
   useEffect(() => {
@@ -322,6 +342,7 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
               description: data.description ?? "",
               image: data.product_image?.map((e) => e.image_url) || [],
               size_chart: data.product_size_chart?.map((e) => e.image_url) || [],
+              supplier_id: (data as any).supplier_id ? Number((data as any).supplier_id) : null,
               store_location_id: (data as any).store_location_id
                 ? Number((data as any).store_location_id)
                 : ((data as any).has_store_location?.id
@@ -426,6 +447,7 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
       variant_name: 0,
       variant: [],
       status: true,
+      supplier_id: null,
       store_location_id: null,
       is_delivery: false,
       is_pickup_instore: false,
@@ -454,7 +476,7 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
     console.log("Saving with creator ID:", currentCreatorId);
 
     setLoading.append("save");
-    const { name, description, price, sku, image, size_chart, status, variant, stock, is_variant, variant_name, store_location_id, is_delivery, is_pickup_instore, is_preorder, pickup_store_id, preorder_date_start, preorder_start_time, preorder_date_end, preorder_end_time, is_promo, promo_title, promo_price, promo_start_date, promo_start_time, promo_end_date, promo_end_time } = form.values;
+    const { name, description, price, sku, image, size_chart, status, variant, stock, is_variant, variant_name, supplier_id, store_location_id, is_delivery, is_pickup_instore, is_preorder, pickup_store_id, preorder_date_start, preorder_start_time, preorder_date_end, preorder_end_time, is_promo, promo_title, promo_price, promo_start_date, promo_start_time, promo_end_date, promo_end_time } = form.values;
 
     try {
       const base64Images = await Promise.all(
@@ -526,6 +548,7 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
         add_to_flash_sale: 0,
         is_kolektix: 1,
         is_product_varian: is_variant ? 1 : 0,
+        supplier_id: supplier_id !== null && supplier_id !== undefined ? Number(supplier_id) : undefined,
         store_location_id: store_location_id !== null ? Number(store_location_id) : null,
         is_delivery: is_delivery ? 1 : 0,
         is_pickup_instore: is_pickup_instore ? 1 : 0,
@@ -729,6 +752,23 @@ export default function CreateMerchandiseAdmin({ onClose, id, creatorId }: Reado
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.setValues({ sku: e.target.value.replaceAll(/\s/g, "") })}
                       />
                     </Flex>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-[5px] md:gap-[20px]">
+                  <div className="min-w-[250px] shrink-0">
+                    <h4 className="text-[16px] font-[500]">Supplier</h4>
+                    <p className="text-grey mt-[5px] text-[13px]">Supplier rekanan untuk produk ini</p>
+                  </div>
+                  <div className="flex-grow">
+                    <Select
+                      placeholder={suppliers.length === 0 ? "Memuat supplier..." : "Pilih Supplier"}
+                      searchable
+                      clearable
+                      data={suppliers}
+                      value={form.values.supplier_id !== null && form.values.supplier_id !== undefined ? String(form.values.supplier_id) : null}
+                      onChange={(v) => form.setFieldValue("supplier_id", v ? Number(v) : null)}
+                    />
                   </div>
                 </div>
 

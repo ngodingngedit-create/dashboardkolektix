@@ -98,10 +98,19 @@ export default function KelolaCreator() {
   const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: "asc" | "desc" | null }>({ key: "created_at", direction: "desc" });
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchQuery, 500);
+  const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
 
-  // Form state - HAPUS user_id dari form values
-  const form = useForm({
+  const form = useForm<{
+    user_id: string | null;
+    name_event_organizer: string;
+    name: string;
+    location: string;
+    phone_number: string;
+    email: string;
+    status: string;
+  }>({
     initialValues: {
+      user_id: null,
       name_event_organizer: "",
       name: "",
       location: "",
@@ -111,6 +120,7 @@ export default function KelolaCreator() {
     },
 
     validate: {
+      user_id: (value) => (!value ? "Akun user wajib dipilih" : null),
       name: (value) => (!value ? t("admin.creator.index.validation.nameRequired") : null),
       phone_number: (value) => (!value ? t("admin.creator.index.validation.phoneRequired") : null),
       email: (value) => (!value ? t("admin.creator.index.validation.emailRequired") : null),
@@ -119,13 +129,40 @@ export default function KelolaCreator() {
 
   useEffect(() => {
     getData();
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      await fetch<any, any>({
+        url: "admin-data/users?per_page=1000",
+        method: "GET",
+        data: {},
+        success: (response) => {
+          const list = Array.isArray(response?.data?.data)
+            ? response.data.data
+            : Array.isArray(response?.data)
+            ? response.data
+            : [];
+          if (Array.isArray(list)) {
+            setUserOptions(
+              list.map((u: any) => ({
+                value: String(u.id),
+                label: `${u.name || "Tanpa Nama"} (${u.email || "-"}) - ID: ${u.id}`,
+              }))
+            );
+          }
+        },
+        error: () => {},
+      });
+    } catch {}
+  };
 
   const getData = async (params?: string) => {
     if (!loading.includes("getdata")) {
       try {
         await fetch<any, any>({
-          url: "creator" + (params ? `?${params}` : ""),
+          url: "admin-data/creator/list" + (params ? `?${params}` : ""),
           method: "GET",
           data: {},
           before: () => setLoading.append("getdata"),
@@ -190,6 +227,7 @@ export default function KelolaCreator() {
     setImageBase64(null);
 
     form.setValues({
+      user_id: creatorData.user_id ? String(creatorData.user_id) : creatorData.has_user?.id ? String(creatorData.has_user.id) : null,
       name_event_organizer: creatorData.name_event_organizer || "",
       name: creatorData.name || "",
       location: creatorData.location || "",
@@ -273,12 +311,9 @@ export default function KelolaCreator() {
     payload.phone_number = values.phone_number;
     payload.email = values.email;
     payload.status = values.status;
+    payload.user_id = values.user_id ? Number(values.user_id) : selectedCreator?.user_id;
 
-    if (isEditMode && selectedCreator?.user_id) {
-      payload.user_id = selectedCreator.user_id;
-    }
-
-    const url = isEditMode ? `creator/${selectedCreator?.id}` : "creator";
+    const url = isEditMode ? `admin-data/creator/${selectedCreator?.id}` : "admin-data/creator";
     const method = isEditMode ? "PUT" : "POST";
 
     await fetch({
@@ -387,6 +422,18 @@ export default function KelolaCreator() {
               onChange={handleFileChange}
               clearable
               variant="filled"
+            />
+
+            <Select
+              label="Pilih User Akun"
+              placeholder={userOptions.length === 0 ? "Memuat data user..." : "Pilih user yang dijadikan creator"}
+              data={userOptions}
+              searchable
+              clearable
+              required
+              value={form.values.user_id}
+              onChange={(val) => form.setFieldValue("user_id", val)}
+              error={form.errors.user_id}
             />
 
             <TextInput label={t("admin.creator.index.nama.creator")} placeholder={t("admin.creator.index.contoh.gwenesbuk.records")} required {...form.getInputProps("name")} />

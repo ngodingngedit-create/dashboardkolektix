@@ -1529,8 +1529,8 @@ const Merch = () => {
     // Mapping berdasarkan ID (Number() agar aman bila id berupa string)
     const paymentId = Number(paymentMethod.id);
 
-    // Mapping ID ke metode pembayaran (4 = QRIS, 6 = DANA via QRIS/Xendit)
-    if (paymentId === 4 || paymentId === 6) {
+    // Mapping ID ke metode pembayaran (4 = QRIS/Xendit, 6 = DANA, 7 = Faspay)
+    if (paymentId === 4 || paymentId === 6 || paymentId === 7) {
       return {
         label: "QRIS",
         icon: faQrcode,
@@ -1549,7 +1549,16 @@ const Merch = () => {
     // Untuk metode pembayaran lainnya berdasarkan payment_name
     const paymentName = paymentMethod.payment_name?.toLowerCase() || '';
 
-    if (paymentName.includes('qris') || paymentName.includes('xendit') || paymentName.includes('dana') || paymentName.includes('ovo') || paymentName.includes('gopay') || paymentName.includes('shopee') || paymentName.includes('linkaja')) {
+    if (
+      paymentName.includes('qris') ||
+      paymentName.includes('xendit') ||
+      paymentName.includes('dana') ||
+      paymentName.includes('faspay') ||
+      paymentName.includes('ovo') ||
+      paymentName.includes('gopay') ||
+      paymentName.includes('shopee') ||
+      paymentName.includes('linkaja')
+    ) {
       return {
         label: "QRIS",
         icon: faQrcode,

@@ -26,6 +26,7 @@ type MerchandiseState = {
     promo_end_date: string | null;
     promo_start_time: string | null;
     promo_end_time: string | null;
+    supplier_id?: number | null;
     variant: {
         id?: number;
         name: string;
