@@ -1614,6 +1614,7 @@ import {
   faRoute,
   faCogs,
   faSliders,
+  faKey,
 } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
 import { faBell, faFileLines, faIdBadge, faCalendar, faArrowAltCircleRight, faMap, faArrowAltCircleLeft, faEdit, faMessage, IconDefinition, faUser } from "@fortawesome/free-regular-svg-icons";
@@ -1764,6 +1765,13 @@ const sidebarData: SidebarData = [
         name: "Module",
         icon: faUser,
         link: "/dashboard/admin/module",
+        role: "Admin",
+      },
+      {
+        id: 1,
+        name: "Set Password",
+        icon: faKey,
+        link: "/dashboard/admin/set-password",
         role: "Admin",
       },
     ],

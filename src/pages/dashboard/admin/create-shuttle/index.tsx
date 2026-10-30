@@ -2,7 +2,7 @@ import { Delete, Get, Post, Put } from "@/utils/REST";
 import {
   Flex, ActionIcon, Group, Modal,
   Tooltip, Text, Badge, Pagination as PaginationM,
-  Button as ButtonM, Stack, TextInput, Textarea, Box, Switch as SwitchM, NumberInput
+  Button as ButtonM, Stack, TextInput, Textarea, Box, Switch as SwitchM, NumberInput, Select
 } from "@mantine/core";
 import { useListState } from "@mantine/hooks";
 import { Input, Tabs, Tab, Checkbox, Switch } from "@nextui-org/react";
@@ -52,6 +52,8 @@ interface ShuttleItem {
   is_finish?: number;
   is_show?: number;
   id: number;
+  creator_id?: number;
+  creator?: { id: number; name: string };
   slug: string;
   slug_url: string;
   event_id: number;
@@ -127,6 +129,7 @@ const emptyForm = {
   is_finish: 0,
   is_show: 1,
   id: 0,
+  creator_id: null as number | null,
   slug: "",
   slug_url: "",
   event_id: 0,
@@ -171,6 +174,7 @@ export default function AdminCreateShuttle() {
   const [detailDays, setDetailDays] = useState<OperationDay[]>([]);
   const [detailTickets, setDetailTickets] = useState<ShuttleTicket[]>([]);
   const [form, setForm] = useState({ ...emptyForm });
+  const [creators, setCreators] = useState<{ value: string; label: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -218,7 +222,31 @@ export default function AdminCreateShuttle() {
     });
   }, [data, sortBy, sortDir, debouncedSearch]);
 
-  useEffect(() => { fetchData(); }, [page, debouncedSearch]);
+  useEffect(() => {
+    fetchData();
+    fetchCreators();
+  }, [page, debouncedSearch]);
+
+  const fetchCreators = async () => {
+    try {
+      const res: any = await Get("creator", {});
+      const list = Array.isArray(res?.data)
+        ? res.data
+        : res?.data?.data && Array.isArray(res.data.data)
+        ? res.data.data
+        : [];
+      setCreators(
+        list
+          .filter((c: any) => c && c.id !== undefined && c.id !== null)
+          .map((c: any) => ({
+            value: String(c.id),
+            label: String(c.name || c.has_user?.name || `Creator #${c.id}`),
+          }))
+      );
+    } catch (e) {
+      console.error("Gagal mengambil data creator:", e);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -324,6 +352,7 @@ export default function AdminCreateShuttle() {
 
         setForm({
           id: item.id || 0,
+          creator_id: item.creator_id ? Number(item.creator_id) : (item.creator?.id ? Number(item.creator.id) : null),
           slug: item.slug || "",
           slug_url: item.slug_url || "",
           event_id: item.event_id || 1,
@@ -563,6 +592,7 @@ export default function AdminCreateShuttle() {
 
       // Fallback: if no operation_days defined, use flat tickets
         const payload: any = {
+          creator_id: form.creator_id ? Number(form.creator_id) : null,
           name: form.name,
           description: form.description.replace(/<[^>]*>/g, ''),
           terms: form.terms,
@@ -752,6 +782,22 @@ export default function AdminCreateShuttle() {
               </label>
 
               <div className="mt-8 text-sm flex flex-col gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">
+                    Creator / Penyelenggara
+                  </label>
+                  <Select
+                    placeholder="Pilih Creator"
+                    searchable
+                    clearable
+                    allowDeselect
+                    data={creators}
+                    value={form.creator_id ? String(form.creator_id) : null}
+                    onChange={(val) => setForm((f) => ({ ...f, creator_id: val ? Number(val) : null }))}
+                    className="w-full"
+                  />
+                </div>
+
                 <InputField
                   type="text"
                   placeholder={t("admin.create-shuttle.index.nama.shuttle")}
@@ -1439,6 +1485,11 @@ export default function AdminCreateShuttle() {
                 </div>
                 <div className="p-4">
                   <h5 className="text-lg font-semibold text-dark truncate">{item.name}</h5>
+                  {(item.creator?.name || creators.find(c => c.value === String(item.creator_id))?.label) && (
+                    <Text size="xs" c="dimmed" fw={600} mt={1}>
+                      {item.creator?.name || creators.find(c => c.value === String(item.creator_id))?.label}
+                    </Text>
+                  )}
                   <p className="text-grey text-sm mt-1 line-clamp-2">{item.description}</p>
                   <p className="text-dark text-sm mt-3">
                     <Icon icon="ph:calendar-blank" className="inline text-gray-400 mr-1.5" />

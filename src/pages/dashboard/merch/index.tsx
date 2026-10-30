@@ -1077,12 +1077,11 @@ const Merch: React.FC = () => {
     const qs = new URLSearchParams({
       per_page: String(PER_PAGE),
       page: String(pageNum),
-      creator_id: String(creatorId),
       order_by: "created_at",
       order_direction: "desc",
     }).toString();
 
-    Get(`product?${qs}`, {})
+    Get(`creator-data/product?${qs}`, {})
       .then((res: any) => {
         if (res.data) {
           console.log("Merchant data response:", res);
@@ -1199,6 +1198,7 @@ const Merch: React.FC = () => {
   };
 
   const itemSearchText = (item: MerchListResponse) => {
+    if (!item) return "";
     const parts: string[] = [];
     if (item.product_name) parts.push(String(item.product_name));
     if (item.slug) parts.push(String(item.slug));
@@ -1216,12 +1216,12 @@ const Merch: React.FC = () => {
 
     if (item.product_varian?.[0]?.price) parts.push(String(item.product_varian[0].price));
     if (item.price) parts.push(String(item.price));
-    if (item.qty !== undefined) parts.push(String(item.qty));
-    if (item.product_status_id !== undefined) parts.push(String(item.product_status_id));
+    if (item.qty !== undefined && item.qty !== null) parts.push(String(item.qty));
+    if (item.product_status_id !== undefined && item.product_status_id !== null) parts.push(String(item.product_status_id));
     if (item.product_image?.length) parts.push(item.product_image.map((p: any) => String(p?.image_url ?? "")).join(" "));
     if (item.has_store_location?.store_name) parts.push(String(item.has_store_location.store_name));
 
-    return parts.join(" ").toLowerCase();
+    return parts.filter(Boolean).join(" ").toLowerCase();
   };
 
   const filteredMap = useMemo(() => {

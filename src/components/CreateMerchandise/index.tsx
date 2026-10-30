@@ -154,10 +154,12 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         const list = res?.data || [];
         if (Array.isArray(list)) {
           setSuppliers(
-            list.map((s: any) => ({
-              value: String(s.id),
-              label: s.name,
-            }))
+            list
+              .filter((s: any) => s && s.id !== undefined && s.id !== null)
+              .map((s: any) => ({
+                value: String(s.id),
+                label: String(s.supplier_name || s.name || `Supplier #${s.id}`),
+              }))
           );
         }
       })
@@ -216,42 +218,44 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
               promo_start_time: (data as any).promo_start_time ? String((data as any).promo_start_time) : null,
               promo_end_date: (data as any).promo_end_date ? String((data as any).promo_end_date).split("T")[0].split(" ")[0] : null,
               promo_end_time: (data as any).promo_end_time ? String((data as any).promo_end_time) : null,
-              variant_name: productVarian.length > 0 ? productVarian[0].varian_category_id : 0,
-              variant: productVarian.map((e: any) => {
-                const parts = (e.varian_name || "").split(" - ");
-                const name = parts[0];
-                const sub_name = parts.slice(1).join(" - ");
+              variant_name: productVarian.length > 0 ? (productVarian[0].varian_category_id || 0) : 0,
+              variant: (productVarian || [])
+                .filter((e: any) => e && typeof e === "object")
+                .map((e: any) => {
+                  const parts = String(e.varian_name || "").split(" - ");
+                  const name = parts[0]?.trim() || "";
+                  const sub_name = parts.slice(1).join(" - ");
 
-                let stock_awal = e.stock_qty;
-                if (e.stock_summary) {
-                  try {
-                    const summary = typeof e.stock_summary === 'string' ? JSON.parse(e.stock_summary) : e.stock_summary;
-                    if (summary && summary.stock_awal !== undefined) {
-                      stock_awal = summary.stock_awal;
+                  let stock_awal = e.stock_qty;
+                  if (e.stock_summary) {
+                    try {
+                      const summary = typeof e.stock_summary === 'string' ? JSON.parse(e.stock_summary) : e.stock_summary;
+                      if (summary && summary.stock_awal !== undefined) {
+                        stock_awal = summary.stock_awal;
+                      }
+                    } catch (err) {
+                      console.error("Failed to parse stock_summary", err);
                     }
-                  } catch (err) {
-                    console.error("Failed to parse stock_summary", err);
                   }
-                }
 
-                return {
-                  id: e.id,
-                  name: name,
-                  sku: e.sku,
-                  stock: Number(stock_awal ?? 0),
-                  price: parseInt(e.price ?? "0"),
-                  weight: e.weight !== undefined && e.weight !== null && e.weight !== "" ? Number(e.weight) : 0,
-                  status: e.is_active !== undefined ? e.is_active === 1 : (e.status_product !== "inactive"),
-                  sub_name: sub_name,
-                  is_promo: Boolean(e.is_promo),
-                  promo_title: e.promo_title ?? null,
-                  promo_price: e.promo_price ? Number(e.promo_price) : null,
-                  promo_start_date: e.promo_start_date ? String(e.promo_start_date).split("T")[0].split(" ")[0] : null,
-                  promo_start_time: e.promo_start_time ? String(e.promo_start_time) : null,
-                  promo_end_date: e.promo_end_date ? String(e.promo_end_date).split("T")[0].split(" ")[0] : null,
-                  promo_end_time: e.promo_end_time ? String(e.promo_end_time) : null,
-                };
-              }),
+                  return {
+                    id: e.id,
+                    name: name,
+                    sku: e.sku || "",
+                    stock: Number(stock_awal ?? 0),
+                    price: parseInt(e.price ?? "0") || 0,
+                    weight: e.weight !== undefined && e.weight !== null && e.weight !== "" ? Number(e.weight) : 0,
+                    status: e.is_active !== undefined ? e.is_active === 1 : (e.status_product !== "inactive"),
+                    sub_name: sub_name || "",
+                    is_promo: Boolean(e.is_promo),
+                    promo_title: e.promo_title ?? null,
+                    promo_price: e.promo_price ? Number(e.promo_price) : null,
+                    promo_start_date: e.promo_start_date ? String(e.promo_start_date).split("T")[0].split(" ")[0] : null,
+                    promo_start_time: e.promo_start_time ? String(e.promo_start_time) : null,
+                    promo_end_date: e.promo_end_date ? String(e.promo_end_date).split("T")[0].split(" ")[0] : null,
+                    promo_end_time: e.promo_end_time ? String(e.promo_end_time) : null,
+                  };
+                }),
             });
           }
           setLoading.filter((e) => e != "getdata");
@@ -451,7 +455,7 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
         add_to_flash_sale: 0,
         is_kolektix: 1,
         is_product_varian: is_variant ? 1 : 0,
-        supplier_id: supplier_id !== null && supplier_id !== undefined ? Number(supplier_id) : undefined,
+        supplier_id: supplier_id ? Number(supplier_id) : null,
         store_location_id: store_location_id !== null ? Number(store_location_id) : null,
         is_delivery: is_delivery ? 1 : 0,
         is_pickup_instore: is_pickup_instore ? 1 : 0,
@@ -693,8 +697,9 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                       placeholder={suppliers.length === 0 ? "Memuat supplier..." : "Pilih Supplier"}
                       searchable
                       clearable
+                      allowDeselect
                       data={suppliers}
-                      value={form.values.supplier_id !== null && form.values.supplier_id !== undefined ? String(form.values.supplier_id) : null}
+                      value={form.values.supplier_id ? String(form.values.supplier_id) : null}
                       onChange={(v) => form.setFieldValue("supplier_id", v ? Number(v) : null)}
                     />
                   </div>
@@ -721,10 +726,12 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                         placeholder={storeLocations.length === 0 ? "Belum ada lokasi toko" : "Pilih lokasi toko"}
                         searchable
                         clearable
-                        data={storeLocations.map((s) => ({
-                          value: String(s.id),
-                          label: `${s.store_name}${s.city?.name ? ` \u2014 ${s.city.name}` : ""}`,
-                        }))}
+                        data={(storeLocations || [])
+                          .filter((s) => s && s.id !== undefined && s.id !== null)
+                          .map((s) => ({
+                            value: String(s.id),
+                            label: String(s.store_name || `Lokasi #${s.id}`) + (s.city?.name ? ` \u2014 ${s.city.name}` : ""),
+                          }))}
                         value={form.values.store_location_id !== null && form.values.store_location_id !== undefined ? String(form.values.store_location_id) : null}
                         onChange={(v) => form.setFieldValue("store_location_id", v ? Number(v) : null)}
                         disabled={storeLocations.length === 0}
@@ -754,10 +761,12 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                         placeholder={storeLocations.length === 0 ? "Belum ada lokasi toko" : "Pilih lokasi pickup"}
                         searchable
                         clearable
-                        data={storeLocations.map((s) => ({
-                          value: String(s.id),
-                          label: `${s.store_name}${s.city?.name ? ` \u2014 ${s.city.name}` : ""}`,
-                        }))}
+                        data={(storeLocations || [])
+                          .filter((s) => s && s.id !== undefined && s.id !== null)
+                          .map((s) => ({
+                            value: String(s.id),
+                            label: String(s.store_name || `Lokasi #${s.id}`) + (s.city?.name ? ` \u2014 ${s.city.name}` : ""),
+                          }))}
                         value={form.values.pickup_store_id !== null && form.values.pickup_store_id !== undefined ? String(form.values.pickup_store_id) : null}
                         onChange={(v) => form.setFieldValue("pickup_store_id", v ? Number(v) : null)}
                         disabled={storeLocations.length === 0}
@@ -964,7 +973,9 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                       placeholder="Kategori Varian"
                       value={String(form.values.variant_name)}
                       onChange={(e) => e && form.setValues({ variant_name: parseInt(e as string) })}
-                      data={variantCategory?.map((e) => ({ value: String(e.id), label: e.varian_name }))}
+                      data={(variantCategory || [])
+                        .filter((e) => e && e.id !== undefined && e.id !== null)
+                        .map((e) => ({ value: String(e.id), label: String(e.varian_name || `Kategori #${e.id}`) }))}
                       style={{ width: 200 }}
                     />
                     {(() => {
@@ -985,10 +996,13 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                           <TagsInput
                             className="variant-tags-input"
                             w="100%"
-                            value={form.values.variant.map((e) => e.name)}
+                            value={(form.values.variant || [])
+                              .map((e) => e?.name)
+                              .filter((n): n is string => typeof n === "string" && n.trim().length > 0)}
                             onChange={(e) => {
+                              const sanitizedTags = (e || []).filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0);
                               const existingVariants = form.values.variant.filter(v => (v as any).id);
-                              const hasAllExisting = existingVariants.every(v => e.includes(v.name));
+                              const hasAllExisting = existingVariants.every(v => sanitizedTags.includes(v.name));
                               
                               if (Boolean(id) && !hasAllExisting) {
                                 notifications.show({
@@ -999,13 +1013,13 @@ export default function CreateMerchandise({ onClose, id }: Readonly<ComponentPro
                                 return;
                               }
                               form.setValues({
-                                variant: e.map((val) => {
+                                variant: sanitizedTags.map((val) => {
                                   const existing = form.values.variant.find(v => v.name === val);
                                   return {
                                     id: (existing as any)?.id,
                                     name: val,
                                     sku: existing?.sku ?? "",
-                                  stock: existing?.stock ?? 0,
+                                    stock: existing?.stock ?? 0,
                                   price: existing?.price ?? 0,
                                   weight: existing?.weight ?? 0,
                                   status: existing ? existing.status : true,
