@@ -1724,6 +1724,7 @@ const sidebarData: SidebarData = [
   { id: 6, name: "Update Resi", icon: faIdBadge, role: "Admin", link: "/dashboard/admin/resi" },
   { id: 6, name: "Venue", icon: faLocationDot, role: "Admin", link: "/dashboard/admin/venue" },
   { id: 6, name: "Slider", icon: faSliders, role: "Admin", link: "/dashboard/admin/slider" },
+  { id: 6, name: "Site Settings", iconify: "ph:gear-duotone", role: "Admin", link: "/dashboard/admin/site-settings" },
   // { id: 6, name: "Lowongan", icon: faBriefcase, role: "Admin", link: "/dashboard/admin/vacancy" },
   // { id: 6, name: "Talenta", icon: faStar, role: "Admin", link: "/dashboard/admin/talenta" },
   {
@@ -2059,6 +2060,13 @@ const sidebarData: SidebarData = [
         name: "Store Location",
         icon: faStore,
         link: "/dashboard/storelocation",
+        role: "Creator",
+      },
+      {
+        id: 8,
+        name: "Suppliers",
+        iconify: "solar:shop-2-bold-duotone",
+        link: "/dashboard/suppliers",
         role: "Creator",
       },
     ],
@@ -2690,7 +2698,7 @@ const SidebarComponent = ({ children }: { children: ReactNode }) => {
           <div className="min-w-0 flex-1 overflow-x-clip">
             <div className={`transition-all ease-in-out delay-150 overflow-y-auto max-h-[100vh] max-w-[100%]`}>
               <div className="pr-6 py-3 border border-x-0 border-t-0 border-primary-light-200 text-dark flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pl-12 md:pl-0">
                   <div className="hidden md:block">
                     <Burgers isOpen={collapse} setIsOpen={setCollapse} />
                   </div>

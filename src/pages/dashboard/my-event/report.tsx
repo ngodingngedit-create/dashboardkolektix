@@ -1249,6 +1249,7 @@
 // export default Merch;
 
 import { Badge, Box, Card, Flex, Select, Stack, Text, Title, Pagination, Button, SegmentedControl, Input, ActionIcon, Modal, Group, Accordion, Table, Divider, TextInput, Tooltip, Menu } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDidUpdate, useListState } from "@mantine/hooks";
@@ -1292,6 +1293,7 @@ const Merch = () => {
   const [isLoadingRemaining, setIsLoadingRemaining] = useState(false);
   const [transactionSegment, setTransactionSegment] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const user = useLoggedUser();
 
   const [slug, setSlug] = useState<string>("");
@@ -1748,7 +1750,7 @@ const Merch = () => {
   useDidUpdate(() => {
     setCurrentPage(1);
     setPemesanPage(1);
-  }, [selectedTicket, selectedSession, selectedStatus, transactionSegment, searchValue]);
+  }, [selectedTicket, selectedSession, selectedStatus, transactionSegment, searchValue, selectedDate]);
 
   const [sortBy, setSortBy] = useState<string>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -1786,6 +1788,16 @@ const Merch = () => {
       result = result.filter(e => String(e.transaction_status_id) === selectedStatus);
     }
 
+    // Filter by Tanggal Pembelian
+    if (selectedDate) {
+      const targetDate = moment(selectedDate).format("YYYY-MM-DD");
+      result = result.filter(e => {
+        const trxDateRaw = e.payment_date || e.created_at;
+        if (!trxDateRaw) return false;
+        return moment(trxDateRaw).format("YYYY-MM-DD") === targetDate;
+      });
+    }
+
     // Search by Keyword
     if (searchValue) {
       const q = searchValue.toLowerCase();
@@ -1799,7 +1811,7 @@ const Merch = () => {
     }
 
     return result;
-  }, [allDataList, transactionSegment, selectedTicket, selectedSession, selectedStatus, searchValue]);
+  }, [allDataList, transactionSegment, selectedTicket, selectedSession, selectedStatus, searchValue, selectedDate]);
 
   const itemsPerPageLocal = 20;
   const currentTotal = filteredDataList.length;
@@ -1842,9 +1854,19 @@ const Merch = () => {
       }
 
       const paymentMethodInfo = getPaymentMethod(transaction.payment_method);
+      const trxDateRaw = transaction.payment_date || transaction.created_at;
+      const tglBeliFormatted = trxDateRaw ? moment(trxDateRaw).format("DD MMM YYYY") : "-";
+      const jamBeliFormatted = trxDateRaw ? moment(trxDateRaw).format("HH:mm") : "";
 
       return {
         no: globalIndex,
+        tanggal_raw: trxDateRaw ? new Date(trxDateRaw).getTime() : 0,
+        tanggal_display: (
+          <Box style={{ whiteSpace: 'nowrap' }}>
+            <Text size="sm" fw={600} c="gray.8">{tglBeliFormatted}</Text>
+            {jamBeliFormatted && <Text size="xs" c="dimmed">{jamBeliFormatted} WIB</Text>}
+          </Box>
+        ),
         nama: pemesanIdentity?.full_name || "-",
         email: pemesanIdentity?.email || "-",
         telepon: pemesanIdentity?.no_telp || "-",
@@ -1918,6 +1940,12 @@ const Merch = () => {
           const numB = Number(String(b[sortBy]).replace(/[^0-9,-]+/g, ""));
           valA = isNaN(numA) ? 0 : numA;
           valB = isNaN(numB) ? 0 : numB;
+        }
+
+        // Handle "tanggal" specifically
+        if (sortBy === "tanggal") {
+          valA = a.tanggal_raw || 0;
+          valB = b.tanggal_raw || 0;
         }
 
         if (valA < valB) return sortDir === "asc" ? -1 : 1;
@@ -2202,9 +2230,12 @@ const Merch = () => {
           const statusText = transactionStatus?.find((z) => z.id == item.transaction_status_id)?.name || "Unknown";
           const paymentMethodInfo = getPaymentMethod(item.payment_method);
           const paymentMethodText = paymentMethodInfo ? paymentMethodInfo.label : (item.payment_method?.payment_name || "-");
+          const trxDateRaw = item.payment_date || item.created_at;
+          const waktuBeliText = trxDateRaw ? moment(trxDateRaw).format("YYYY-MM-DD HH:mm:ss") : "-";
 
           const row: Record<string, any> = {
             [t('report.colNo')]: index + 1,
+            "Waktu Pembelian": waktuBeliText,
             [t('report.xlsxName')]: pemesanIdentity?.full_name || "-",
             [t('common.email')]: pemesanIdentity?.email || "-",
             [t('report.xlsxPhone')]: pemesanIdentity?.no_telp || "-",
@@ -2465,19 +2496,20 @@ const Merch = () => {
               size="sm"
             />
 
-            {/* Filter Sesi */}
-            <Select
-              label={t('report.filterSession')}
-              value={selectedSession}
-              data={availableSessions}
-              onChange={(value) => { if (value) setSelectedSession(value); }}
-              placeholder={t('report.allSessions')}
-              styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
-              w={155}
-              className="shrink-0"
-              disabled={availableSessions.length <= 1}
-              size="sm"
-            />
+            {/* Filter Sesi - Hanya tampil jika event menggunakan sesi dan ada datanya */}
+            {selectedEventFlags.is_session && availableSessions.length > 1 && (
+              <Select
+                label={t('report.filterSession')}
+                value={selectedSession}
+                data={availableSessions}
+                onChange={(value) => { if (value) setSelectedSession(value); }}
+                placeholder={t('report.allSessions')}
+                styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
+                w={155}
+                className="shrink-0"
+                size="sm"
+              />
+            )}
 
             {/* Filter Status Pembayaran */}
             <Select
@@ -2496,6 +2528,19 @@ const Merch = () => {
               w={165}
               className="shrink-0"
               leftSection={<FontAwesomeIcon icon={faFilter} size="sm" />}
+              size="sm"
+            />
+
+            {/* Filter Tanggal Pembelian */}
+            <DatePickerInput
+              label="Tanggal Pembelian"
+              placeholder="Pilih tanggal"
+              value={selectedDate}
+              onChange={setSelectedDate}
+              clearable
+              styles={{ label: { fontSize: '11px', fontWeight: 600, color: '#868e96', marginBottom: 4 } }}
+              w={160}
+              className="shrink-0"
               size="sm"
             />
 
@@ -2527,6 +2572,7 @@ const Merch = () => {
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e8e8e8', backgroundColor: '#f5f7fa' }}>
                     <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', width: 48 }}>{t('report.colNo')}</th>
+                    <th onClick={() => handleSort('tanggal')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>Waktu Beli <span style={{ opacity: sortBy === 'tanggal' ? 1 : 0.3 }}>{sortBy === 'tanggal' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('invoice')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.invoiceNo')} <span style={{ opacity: sortBy === 'invoice' ? 1 : 0.3 }}>{sortBy === 'invoice' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('nama')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('report.colName')} <span style={{ opacity: sortBy === 'nama' ? 1 : 0.3 }}>{sortBy === 'nama' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
                     <th onClick={() => handleSort('email')} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#777', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}>{t('common.email')} <span style={{ opacity: sortBy === 'email' ? 1 : 0.3 }}>{sortBy === 'email' && sortDir === 'desc' ? '↓' : '↑'}</span></th>
@@ -2550,6 +2596,7 @@ const Merch = () => {
                     processedTransactionData.map((item, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid #f0f0f0' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f8fafd')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', textAlign: 'center', width: 48 }}><Text size="sm" c="dimmed" fw={500}>{item.no}</Text></td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>{item.tanggal_display}</td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm" fw={600}>{item.invoice}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="sm">{item.nama}</Text></td>
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Text size="xs" c="dimmed">{item.email}</Text></td>
@@ -2570,7 +2617,7 @@ const Merch = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={9 + (selectedEventFlags.is_session ? 1 : 0) + (selectedEventFlags.is_domisili ? 1 : 0)} style={{ textAlign: 'center', padding: '40px' }}>
+                      <td colSpan={10 + (selectedEventFlags.is_session ? 1 : 0) + (selectedEventFlags.is_domisili ? 1 : 0)} style={{ textAlign: 'center', padding: '40px' }}>
                         <Text>{t('report.noData')}</Text>
                       </td>
                     </tr>
